@@ -34,3 +34,24 @@ cpacqc -d path/to/bids_dir -o path/to/output-qc-dir -s subject-id -n number-of-p
 ```bash
 cpacqc -d path/to/bids_dir -o path/to/output-qc-dir -n number-of-procs
 ```
+
+or simply
+
+```bash
+cpacqc -d path/to/bids_dir -o path/to/output-qc-dir
+```
+
+3. **Plotting Overlays**
+
+```bash
+cpacqc -d path/to/bids_dir -o qc_dir -c ./overlay.csv
+```
+
+where overlay.csv can be in format
+
+```csv
+image_1,image_2
+desc-preproc_bold, desc-preproc_T1w
+```
+
+and so on.

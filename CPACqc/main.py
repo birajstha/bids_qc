@@ -91,7 +91,7 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8):
 
     # for rows in overlay_csv find the resource_name and get the rows
     if config:
-        overlay_df = pd.read_csv(overlay_csv)
+        overlay_df = pd.read_csv(config)
         overlay_df = overlay_df.fillna(False)
         results = overlay_df.apply(lambda row: process_row(row, nii_gz_files, overlay_dir, plots_dir, logger), axis=1).tolist()
 
