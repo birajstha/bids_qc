@@ -1,4 +1,4 @@
-from BIDSqc.main import main
+from CPACqc.main import main
 import os
 import shutil
 from colorama import Fore, Style

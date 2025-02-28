@@ -1,4 +1,4 @@
-from bids_qc.main import main
+from CPACqc.main import main
 import os
 import argparse
 from colorama import Fore, Style, init

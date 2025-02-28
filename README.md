@@ -1,6 +1,6 @@
 # CPAC-QC Plotting App
 
-![CPAC-QC](static/cpac-qc.png)
+![CPAC-QC](https://raw.githubusercontent.com/birajstha/bids_qc/main/static/cpac-qc.png)
 
 ## Overview
 
@@ -18,11 +18,19 @@ The CPAC-qc Plotting App is a tool designed to generate quality control plots fo
 ## Installation
 
 ```bash
-pip install bids_qc
+pip install CPACqc
 ```
 
 ## Usage
 
+1. **Running Single Subject**
+
 ```bash
-bids_qc -d path/to/bids_dir -o path/to/output-qc-dir -n number-of-procs
+cpacqc -d path/to/bids_dir -o path/to/output-qc-dir -s subject-id -n number-of-procs
+```
+
+2. **Running all Subjects in the dir**
+
+```bash
+cpacqc -d path/to/bids_dir -o path/to/output-qc-dir -n number-of-procs
 ```

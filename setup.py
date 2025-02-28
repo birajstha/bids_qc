@@ -10,8 +10,8 @@ with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
 setup(
-    name='bidsqc',  
-    version='0.1.0',  
+    name='CPACqc',  
+    version='0.1.2',  
     author='Biraj Shrestha',  
     author_email='birajstha@gmail.com',  
     description='A package to view Nifti files in a BIDS dataset and generate QC plots.',
@@ -28,7 +28,7 @@ setup(
     python_requires='>=3.10',
     entry_points={
         'console_scripts': [
-            'bids_qc=bids_qc.cli:run',  # This points to the run function in cli.py
+            'cpacqc=CPACqc.cli:run',  # This points to the run function in cli.py
         ],
     },
     include_package_data=True,
