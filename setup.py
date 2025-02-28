@@ -11,7 +11,7 @@ with open('requirements.txt') as f:
 
 setup(
     name='CPACqc',  
-    version='0.1.7',  
+    version=__version__,  
     author=__author__,  
     author_email=__email__,  
     description=__description__,
