@@ -22,7 +22,7 @@ def run():
         os.makedirs(args.qc_dir, exist_ok=True)
 
         # Locate the templates directory within the package
-        templates_dir = pkg_resources.resource_filename('bids_qc', 'templates')
+        templates_dir = pkg_resources.resource_filename('CPACqc', 'templates')
         # Copy only the index.html file from the templates directory to the QC output directory
         src_file = os.path.join(templates_dir, 'index.html')
         dest_file = os.path.join(args.qc_dir, 'index.html')

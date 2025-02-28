@@ -11,7 +11,7 @@ with open('requirements.txt') as f:
 
 setup(
     name='CPACqc',  
-    version='0.1.3',  
+    version='0.1.4',  
     author='Biraj Shrestha',  
     author_email='birajstha@gmail.com',  
     description='A package to view Nifti files in a BIDS dataset and generate QC plots.',
