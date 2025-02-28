@@ -4,6 +4,9 @@ import os
 from tqdm import tqdm
 from colorama import Fore, Style, init
 import nibabel as nib
+from nilearn.plotting import plot_stat_map
+import matplotlib.pyplot as plt
+import numpy as np
 
 def plot_nii_overlay(in_nii, plot_loc, background=None, volume=None, cmap='viridis', title=None, alpha=0.8, threshold=20):
     im = nib.load(in_nii)

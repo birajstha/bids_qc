@@ -3,6 +3,8 @@ import os
 import argparse
 from multiprocessing import Pool
 from tqdm import tqdm
+from functools import lru_cache
+import tempfile
 
 from bids2table import bids2table
 import nibabel as nib
@@ -112,6 +114,14 @@ def process_row(row, nii_gz_files, overlay_dir, plots_dir, logger):
                 })
 
     return result_rows
+
+@lru_cache(maxsize=None)
+def parse_bids(base_dir, workers=8, logger=None):
+    print(Fore.YELLOW + "Parsing BIDS directory..." + Style.RESET_ALL)
+    if logger: 
+        logger.info("Parsing BIDS directory...")
+    df = bids2table(base_dir, workers=workers).flat
+    return df
 
 def run_wrapper(args):
     return run(*args)

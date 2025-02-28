@@ -30,7 +30,7 @@ def setup_logger(qc_dir):
     
     return logger
 
-def main(bids_dir, qc_dir, config=False, n_procs=8):
+def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8):
     os.makedirs(qc_dir, exist_ok=True)
     logger = setup_logger(qc_dir)
     
@@ -44,15 +44,21 @@ def main(bids_dir, qc_dir, config=False, n_procs=8):
     overlay_dir = os.path.join(qc_dir, "overlays")
     os.makedirs(overlay_dir, exist_ok=True)
 
-    if os.path.exists(csv_file):
-        # Load the CSV file if it exists
-        df = pd.read_csv(csv_file)
-    else:
-        # Load in parallel and stream to disk as a Parquet dataset
-        df = bids2table(bids_dir, workers=n_procs).flat
-        # Save df as CSV
-        #df.to_csv(csv_file, index=False)
+    df = parse_bids(bids_dir, workers=n_procs, logger=logger)
 
+    if sub:
+        if 'sub-' in sub:
+            sub = sub.split('-')[-1]
+        # Check if sub matches the available subjects
+        if sub not in df['sub'].unique():
+            logger.error(f"Subject {sub} not found in the DataFrame. Available subjects: {df['sub'].unique()}")
+            print(Fore.RED + f"Subject {sub} not found in the DataFrame. Available subjects: {df['sub'].unique()}" + Style.RESET_ALL)
+            return False
+        
+        df = df[df['sub'] == sub]
+        
+    #df.to_csv(csv_file, index=False)
+    
     for col in df.columns:
         if isinstance(df[col].iloc[0], dict):
             df[col] = df[col].apply(lambda x: str(x) if x else "")

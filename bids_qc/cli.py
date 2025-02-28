@@ -12,6 +12,7 @@ def run():
     parser.add_argument("-d", "--bids_dir", required=True, help="Path to the BIDS directory")
     parser.add_argument("-o", "--qc_dir", required=True, help="Path to the QC output directory")
     parser.add_argument("-c", "--config", required=False, help="Config file")
+    parser.add_argument("-s", "--sub", required=False, help="specify subject/participant label")
     parser.add_argument("-n", "--n_procs", type=int, default=8, help="Number of processes to use for multiprocessing")
 
     args = parser.parse_args()
@@ -30,7 +31,7 @@ def run():
         print(f"Error copying templates: {e}")
         pass
 
-    not_plotted = main(args.bids_dir, args.qc_dir, args.config, args.n_procs)
+    not_plotted = main(args.bids_dir, args.qc_dir, args.config, args.sub, args.n_procs)
     if len(not_plotted) > 0:
         print(Fore.RED + "Some files were not plotted. Please check log")
     else:
