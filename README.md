@@ -11,16 +11,18 @@ The CPAC-qc Plotting App is a tool designed to generate quality control plots fo
 - Generate bulk or subject specific plots
 
 ## Requirements
+
 - A html viewing tool or extension
 - BIDS dir with `.nii.gz` images in it.
 
 ## Installation
+
 ```bash
 pip install bids_qc
 ```
 
 ## Usage
+
 ```bash
 bids_qc -d path/to/bids_dir -o path/to/output-qc-dir -n number-of-procs
 ```
-
