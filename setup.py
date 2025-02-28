@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
-
+from CPACqc import __version__, __author__, __email__, __description__
 # Read the contents of your README file
 from pathlib import Path
 this_directory = Path(__file__).parent
@@ -11,10 +11,10 @@ with open('requirements.txt') as f:
 
 setup(
     name='CPACqc',  
-    version='0.1.5',  
-    author='Biraj Shrestha',  
-    author_email='birajstha@gmail.com',  
-    description='A package to view Nifti files in a BIDS dataset and generate QC plots.',
+    version=__version__,  
+    author=__author__,  
+    author_email=__email__,  
+    description=__description__,
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/birajstha/bids_qc',  
