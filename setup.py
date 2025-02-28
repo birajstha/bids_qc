@@ -33,6 +33,6 @@ setup(
     },
     include_package_data=True,
     package_data={
-        'bids_qc': ['templates/index.html'],
+        'CPACqc': ['templates/index.html'],
     },
 )
