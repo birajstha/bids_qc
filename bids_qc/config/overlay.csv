@@ -1,0 +1,8 @@
+image_1,image_2
+label-WM_desc-preproc_mask,desc-preproc_T1w
+label-GM_desc-preproc_mask,desc-preproc_T1w
+label-CSF_desc-preproc_mask,desc-preproc_T1w
+desc-preproc_T1w
+space-MNI152NLin2009cAsym_desc-preproc_T1w
+space-MNI152NLin2009cAsym_reg-noGSR_desc-preproc1_bold,space-MNI152NLin2009cAsym_desc-preproc_T1w
+space-MNI152NLin2009cAsym_reg-GSR_desc-preproc2_bold,space-MNI152NLin2009cAsym_desc-preproc_T1w
