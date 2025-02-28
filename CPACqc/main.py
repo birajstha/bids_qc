@@ -112,6 +112,7 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8):
         result_df = result_df[columns_to_keep].copy()
 
     result_df['relative_path'] = result_df.apply(lambda row: os.path.relpath(row['plot_path'], qc_dir), axis=1)
+    result_df['file_info'] = result_df.apply(lambda row: get_file_info(row['file_path_1']), axis=1)
     
     # save the result_df to csv
     result_df_csv_path = os.path.join(qc_dir, "results.csv")

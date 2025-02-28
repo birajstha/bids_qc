@@ -11,8 +11,19 @@ import nibabel as nib
 from colorama import Fore, Style, init
 
 from CPACqc.plot import run
-
+import json
 import re
+
+def get_file_info(file_path):
+    img = nib.load(file_path)
+    resolution = tuple(float(x) for x in img.header.get_zooms())
+    dimension = tuple(int(x) for x in img.shape)
+    if len(dimension) == 4:
+        # get TR info
+        tr = float(img.header.get_zooms()[3])
+    else:
+        tr = None
+    return json.dumps({"resolution": resolution, "dimension": dimension, "tr": tr})
 
 def gen_resource_name(row):
     sub = row["sub"]
