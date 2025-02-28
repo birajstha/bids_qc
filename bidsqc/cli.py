@@ -1,4 +1,4 @@
-from bids_qc.main import main
+from bidsqc.main import main
 import os
 import shutil
 from colorama import Fore, Style

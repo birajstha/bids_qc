@@ -10,7 +10,7 @@ from bids2table import bids2table
 import nibabel as nib
 from colorama import Fore, Style, init
 
-from bids_qc.plot import run
+from bidsqc.plot import run
 
 import re
 

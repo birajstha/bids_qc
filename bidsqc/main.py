@@ -8,8 +8,8 @@ import nibabel as nib
 from colorama import Fore, Style, init
 import logging
 
-from bids_qc.utils import *
-from bids_qc.plot import run
+from bidsqc.utils import *
+from bidsqc.plot import run
 
 def setup_logger(qc_dir):
     # setup logger

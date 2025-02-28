@@ -10,7 +10,7 @@ with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
 setup(
-    name='bids_qc',  
+    name='bidsqc',  
     version='0.1.0',  
     author='Biraj Shrestha',  
     author_email='birajstha@gmail.com',  
