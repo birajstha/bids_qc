@@ -4,7 +4,31 @@ import os
 from tqdm import tqdm
 from colorama import Fore, Style, init
 import nibabel as nib
-from quickviz.plot_nii_overlay import plot_nii_overlay
+
+def plot_nii_overlay(in_nii, plot_loc, background=None, volume=None, cmap='viridis', title=None, alpha=0.8, threshold=20):
+    im = nib.load(in_nii)
+    if volume is not None:
+        v = volume
+        im = nib.Nifti1Image(im.get_fdata()[:,:,:,v], header=im.header, affine=im.affine)
+
+    if threshold != 'auto':
+        lb = np.percentile(np.sort(np.unique(im.get_fdata())), float(threshold))
+    else:
+        lb = threshold
+
+    if background and background != 'None':
+        bg = nib.load(background)
+        plot_stat_map(im, bg_img=bg, output_file=plot_loc,
+                      black_bg=True, threshold=lb, title=title, cmap=cmap, alpha=float(alpha))
+    
+    elif background == None or background == 'None':
+        plot_stat_map(im, bg_img=None, output_file=plot_loc,
+                      black_bg=True, threshold=lb, title=title, cmap=cmap, alpha=float(alpha))
+                                                                                                        
+    else:
+        plot_stat_map(im, output_file=plot_loc,
+                      black_bg=True, threshold=lb, title=title, cmap=cmap, alpha=float(alpha))
+
 
 def run(sub, ses, file_path_1, file_path_2, file_name, plots_dir, plot_path, logger):
     # # check if the above files exist
@@ -25,12 +49,12 @@ def run(sub, ses, file_path_1, file_path_2, file_name, plots_dir, plot_path, log
         plot_nii_overlay(
             file_path_1,
             plot_path,
+            background=file_path_2 if file_path_2 else None,
+            volume=volume_index,
             cmap='bwr',
             title="",
             alpha=0.5,
-            threshold="auto",
-            background=file_path_2 if file_path_2 else None,
-            volume=volume_index
+            threshold="auto"
         )
     except Exception as e:
         # print(Fore.RED + f"Error on {file_name}" + Style.RESET_ALL)

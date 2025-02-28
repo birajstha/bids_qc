@@ -25,7 +25,7 @@ setup(
         'License :: OSI Approved :: MIT License',  # Replace with your license
         'Operating System :: OS Independent',
     ],
-    python_requires='>=3.12',
+    python_requires='>=3.10',
     entry_points={
         'console_scripts': [
             'bids_qc=bids_qc.cli:run',  # This points to the run function in cli.py
