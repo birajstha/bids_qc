@@ -1,3 +1,6 @@
+
+[![PyPI Downloads](https://static.pepy.tech/badge/cpacqc)](https://pepy.tech/projects/cpacqc)
+
 # CPAC-QC Plotting App
 
 ![CPAC-QC](https://raw.githubusercontent.com/birajstha/bids_qc/main/static/cpac-qc.png)
