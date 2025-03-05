@@ -7,8 +7,8 @@ from elbow.builders import build_parquet, build_table
 from elbow.sources.filesystem import Crawler
 from elbow.typing import StrOrPath
 
-from bids2table.extractors.bids import extract_bids_subdir
-from bids2table.table import BIDSTable
+from CPACqc.bids2table.extractors.bids import extract_bids_subdir
+from CPACqc.bids2table.table import BIDSTable
 
 logger = logging.getLogger("bids2table")
 
