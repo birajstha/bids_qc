@@ -16,6 +16,7 @@ def run():
     parser.add_argument("-s", "--sub", nargs='+', required=False, help="Specify subject/participant label(s) to process")
     parser.add_argument("-n", "--n_procs", type=int, default=8, help="Number of processes to use for multiprocessing")
     parser.add_argument("-v", "--version", action='version', version=f'%(prog)s {__version__}', help="Show the version number and exit")
+    parser.add_argument("-pdf", "--pdf", required=False, help="Generate PDF report")
     
     args = parser.parse_args()
     
@@ -33,7 +34,7 @@ def run():
         print(f"Error copying templates: {e}")
         return  # Exit the function if an error occurs
 
-    not_plotted = main(args.bids_dir, args.qc_dir, args.config, args.sub, args.n_procs)
+    not_plotted = main(args.bids_dir, args.qc_dir, args.config, args.sub, args.n_procs, args.pdf)
     if len(not_plotted) > 0:
         print(Fore.RED + "Some files were not plotted. Please check the log for details.")
     else:

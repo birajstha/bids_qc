@@ -136,3 +136,8 @@ def parse_bids(base_dir, sub=None, workers=8, logger=None):
 
 def run_wrapper(args):
     return run(*args)
+
+def make_pdf(qc_dir):
+    print(Fore.YELLOW + "Generating PDF report..." + Style.RESET_ALL)
+    os.system(f"wkhtmltopdf {qc_dir}/index.html {qc_dir}/report.pdf")
+    print(Fore.GREEN + "PDF report generated successfully." + Style.RESET_ALL)
