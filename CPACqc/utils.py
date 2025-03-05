@@ -26,9 +26,10 @@ def get_file_info(file_path):
     if len(dimension) == 4:
         # get TR info
         tr = float(img.header.get_zooms()[3])
+        nos_tr = img.pixdim[4]
     else:
         tr = None
-    return json.dumps({"resolution": resolution, "dimension": dimension, "tr": tr})
+    return json.dumps({"resolution": resolution, "dimension": dimension, "tr": tr, "No. of TRs": nos_tr})
 
 def gen_resource_name(row):
     sub = row["sub"]
@@ -148,6 +149,10 @@ def make_pdf(qc_dir, pdf_name="report.pdf"):
 
     # Read the CSV file
     csv_data = pd.read_csv(os.path.join(qc_dir, "results.csv"))
+
+    #handle .pdf in pdf_name
+    if pdf_name[-4:] != ".pdf":
+        pdf_name += ".pdf"
 
     pdf_path = os.path.join(qc_dir, pdf_name)
     c = canvas.Canvas(pdf_path, pagesize=letter)
