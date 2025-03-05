@@ -18,7 +18,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/birajstha/bids_qc',  
-    packages=find_packages(include=['CPACqc', 'CPACqc.*', 'bids2table', 'bids2table.*']),
+    packages=find_packages(),
     install_requires=requirements,
     dependency_links=[
         'git+https://github.com/birajstha/bids2table.git@main#egg=bids2table'
