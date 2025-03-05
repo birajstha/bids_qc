@@ -1,4 +1,3 @@
-
 [![PyPI Downloads](https://static.pepy.tech/badge/cpacqc)](https://pepy.tech/projects/cpacqc)
 
 # CPAC-QC Plotting App
@@ -26,16 +25,24 @@ pip install CPACqc
 
 ## Usage
 
-1. **Running Single Subject**
+1. **Running Single Subject with defined number of procs**
 
 ```bash
 cpacqc -d path/to/bids_dir -o path/to/output-qc-dir -s subject-id -n number-of-procs
 ```
 
-2. **Running all Subjects in the dir**
+Note: if -n is not provided default is 8
+
+2. **Running multiple Subjects**
 
 ```bash
-cpacqc -d path/to/bids_dir -o path/to/output-qc-dir -n number-of-procs
+cpacqc -d path/to/bids_dir -o path/to/output-qc-dir -s subject-id_1 subject-id_2
+```
+
+3. **Running all Subjects in the dir**
+
+```bash
+cpacqc -d path/to/bids_dir -o path/to/output-qc-dir
 ```
 
 or simply
@@ -44,7 +51,7 @@ or simply
 cpacqc -d path/to/bids_dir -o path/to/output-qc-dir
 ```
 
-3. **Plotting Overlays**
+4. **Plotting Overlays**
 
 ```bash
 cpacqc -d path/to/bids_dir -o qc_dir -c ./overlay.csv
@@ -58,3 +65,7 @@ desc-preproc_bold, desc-preproc_T1w
 ```
 
 and so on.
+
+## Viewing
+
+Use any .html viewer extension to view index.html

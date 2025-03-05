@@ -3,13 +3,13 @@ import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from tqdm import tqdm
 
-from bids2table import bids2table
 import nibabel as nib
 from colorama import Fore, Style, init
 import logging
 
 from CPACqc.utils import *
 from CPACqc.plot import run
+from CPACqc.bids2table._b2t import bids2table
 
 def setup_logger(qc_dir):
     # setup logger
