@@ -185,16 +185,17 @@ def make_pdf(qc_dir, pdf_name="report.pdf"):
                 image_path = os.path.join(qc_dir, image_data['relative_path'])
                 if os.path.exists(image_path):
                     img = ImageReader(image_path)
-                    img_width = 200  # Adjust the width as needed
-                    img_height = 150  # Adjust the height as needed
+                    max_img_width = width - 20  # Adjust the max width to fit the page
+                    max_img_height = height / 2  # Adjust the max height to fit the page
 
                     # Preserve aspect ratio
+                    img_width, img_height = img.getSize()
                     aspect_ratio = img_width / img_height
                     if aspect_ratio > 1:
-                        img_width = 200
+                        img_width = max_img_width
                         img_height = img_width / aspect_ratio
                     else:
-                        img_height = 150
+                        img_height = max_img_height
                         img_width = img_height * aspect_ratio
 
                     # Check if the image fits on the current page, otherwise add a new page
@@ -203,7 +204,7 @@ def make_pdf(qc_dir, pdf_name="report.pdf"):
                         y_position = height - 30  # Reset y_position for the new page
 
                     # Add the image to the PDF
-                    c.drawImage(img, 10, y_position - img_height, width=img_width, height=img_height)
+                    c.drawImage(img, (width - img_width) / 2, y_position - img_height, width=img_width, height=img_height)
                     c.setFont("Helvetica", 10)  # Use smaller font for the file name
                     label = f"{image_data['sub']}_{image_data['file_name']}"
                     c.drawString(10, y_position - img_height - 10, label)

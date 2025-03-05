@@ -403,30 +403,28 @@
                     var imageContainer = document.createElement("div");
                     imageContainer.className = "col-lg-4 col-md-6 col-sm-12";
                     imageContainer.innerHTML = `
-                            <div class="card mb-4 h-100 d-flex flex-column">
-                              <img src="${imagePath}" class="card-img-top img-fluid" onerror="this.onerror=null; this.src=''; console.error('Image not found:', '${imagePath}');" />
-                              <div class="card-body d-flex flex-column">
-                                <h6 class="card-title">${imageName}</h6>
-                                <p class="card-text">
-                                  Dimensions: ${fileInfo.dimension.join(
-                                    " x "
-                                  )}<br>
-                                  Resolution: ${fileInfo.resolution
-                                    .map(formatNumber)
-                                    .join(" x ")}<br>
-                                  TR: ${
-                                    fileInfo.tr !== null
-                                      ? formatNumber(fileInfo.tr)
-                                      : "N/A"
-                                  }<br>
-                                  No. of TRs: ${
-                                    fileInfo.nos_tr !== null
-                                      ? formatNumber(fileInfo.nos_tr)
-                                      : "N/A"
-                                  }
-                                </p>
-                              </div>
-                            </div>`;
+                      <div class="card mb-4 h-100 d-flex flex-column">
+                        <img src="${imagePath}" class="card-img-top img-fluid" onerror="this.onerror=null; this.src=''; console.error('Image not found:', '${imagePath}');" />
+                        <div class="card-body d-flex flex-column">
+                          <h6 class="card-title">${imageName}</h6>
+                          <p class="card-text">
+                            Dimensions: ${fileInfo.dimension.join(" x ")}<br>
+                            Resolution: ${fileInfo.resolution
+                              .map(formatNumber)
+                              .join(" x ")}<br>
+                            ${
+                              fileInfo.tr !== null
+                                ? `TR: ${formatNumber(fileInfo.tr)}<br>`
+                                : ""
+                            }
+                            ${
+                              fileInfo.nos_tr !== null
+                                ? `No. of TRs: ${formatNumber(fileInfo.nos_tr)}`
+                                : ""
+                            }
+                          </p>
+                        </div>
+                      </div>`;
                     rowContainer.appendChild(imageContainer);
                   });
 
@@ -493,13 +491,15 @@
                       Resolution: ${fileInfo.resolution
                         .map(formatNumber)
                         .join(" x ")}<br>
-                      TR: ${
-                        fileInfo.tr !== null ? formatNumber(fileInfo.tr) : "N/A"
-                      }<br>
-                      No. of TRs: ${
+                      ${
+                        fileInfo.tr !== null
+                          ? `TR: ${formatNumber(fileInfo.tr)}<br>`
+                          : ""
+                      }
+                      ${
                         fileInfo.nos_tr !== null
-                          ? formatNumber(fileInfo.nos_tr)
-                          : "N/A"
+                          ? `No. of TRs: ${formatNumber(fileInfo.nos_tr)}`
+                          : ""
                       }
                     </p>
                   </div>
@@ -620,17 +620,18 @@
                             `Resolution: ${fileInfo.resolution
                               .map((num) => num.toFixed(2))
                               .join(" x ")}`,
-                            `TR: ${
-                              fileInfo.tr !== null
-                                ? fileInfo.tr.toFixed(2)
-                                : "N/A"
-                            }`,
-                            `No of TRs: ${
-                              fileInfo.nos_tr !== null ? fileInfo.nos_tr : "N/A"
-                            }`,
-                          ].join("\n");
+                          ];
+
+                          if (fileInfo.tr !== null) {
+                            fileInfoText.push(`TR: ${fileInfo.tr.toFixed(2)}`);
+                          }
+
+                          if (fileInfo.nos_tr !== null) {
+                            fileInfoText.push(`No. of TRs: ${fileInfo.nos_tr}`);
+                          }
+
                           const fileInfoLines = doc.splitTextToSize(
-                            fileInfoText,
+                            fileInfoText.join("\n"),
                             imgWidth
                           );
                           doc.text(
