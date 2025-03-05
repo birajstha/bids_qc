@@ -1,5 +1,4 @@
 backports.tarfile==1.2.0
-bids2table @ git+https://github.com/birajstha/bids2table.git@main#egg=bids2table
 certifi==2025.1.31
 cffi==1.17.1
 charset-normalizer==3.4.1
