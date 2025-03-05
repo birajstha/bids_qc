@@ -131,6 +131,7 @@ def parse_bids(base_dir, sub=None, workers=8, logger=None):
     print(Fore.YELLOW + "Parsing BIDS directory..." + Style.RESET_ALL)
     if logger: 
         logger.info("Parsing BIDS directory...")
+    print(sub)
     df = bids2table(base_dir, subject=sub, workers=workers).flat
     return df
 
