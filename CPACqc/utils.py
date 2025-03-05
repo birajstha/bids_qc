@@ -26,7 +26,7 @@ def get_file_info(file_path):
     if len(dimension) == 4:
         # get TR info
         tr = float(img.header.get_zooms()[3])
-        nos_tr = tuple(int(img.shape[-1]))
+        nos_tr = str(int(img.shape[-1]))
     else:
         tr = None
         nos_tr = None
@@ -221,7 +221,7 @@ def make_pdf(qc_dir, pdf_name="report.pdf"):
 
                     if file_info['nos_tr'] is not None:
                         file_info_text.append(f"No of TRs: {file_info['nos_tr']}")
-                        
+
                     c.setFont("Helvetica", 8)  # Use smaller font for the file info
                     for i, line in enumerate(file_info_text):
                         c.drawString(10, y_position - img_height - 25 - (i * 10), line)
