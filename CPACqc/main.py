@@ -46,6 +46,7 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8):
 
     df = parse_bids(bids_dir, workers=n_procs, logger=logger)
 
+<<<<<<< Updated upstream
     if sub:
         if 'sub-' in sub:
             sub = sub.split('-')[-1]
@@ -58,6 +59,9 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8):
         df = df[df['sub'] == sub]
         
     #df.to_csv(csv_file, index=False)
+=======
+    df = parse_bids(bids_dir, sub=sub, workers=n_procs, logger=logger)
+>>>>>>> Stashed changes
     
     for col in df.columns:
         if isinstance(df[col].iloc[0], dict):
