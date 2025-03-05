@@ -137,7 +137,9 @@ def parse_bids(base_dir, sub=None, workers=8, logger=None):
 def run_wrapper(args):
     return run(*args)
 
-def make_pdf(qc_dir):
+from weasyprint import HTML
+
+def make_pdf(qc_dir, pdf_name="report.pdf"):
     print(Fore.YELLOW + "Generating PDF report..." + Style.RESET_ALL)
-    os.system(f"wkhtmltopdf {qc_dir}/index.html {qc_dir}/report.pdf")
+    HTML(f"{qc_dir}/index.html").write_pdf(f"{qc_dir}/{pdf_name}.pdf")
     print(Fore.GREEN + "PDF report generated successfully." + Style.RESET_ALL)

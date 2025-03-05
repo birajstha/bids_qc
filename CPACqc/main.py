@@ -140,7 +140,12 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8, pdf=False):
                 logger.error(f"Error processing {futures[future]}: {e}, Try with a lower number of processes")
                 not_plotted.append(futures[future])
     if pdf:
-        make_pdf(qc_dir)
+        try:
+            make_pdf(qc_dir, pdf)
+        except Exception as e:
+            logger.error(f"Error generating PDF: {e}")
+            print(Fore.RED + f"Error generating PDF: {e}" + Style.RESET_ALL)
+    
     return not_plotted
     
 if __name__ == "__main__":
