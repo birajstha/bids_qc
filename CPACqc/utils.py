@@ -26,7 +26,7 @@ def get_file_info(file_path):
     if len(dimension) == 4:
         # get TR info
         tr = float(img.header.get_zooms()[3])
-        nos_tr = img.pixdim[4]
+        nos_tr = img.header.pixdim[4]
     else:
         tr = None
     return json.dumps({"resolution": resolution, "dimension": dimension, "tr": tr, "No. of TRs": nos_tr})
