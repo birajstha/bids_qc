@@ -44,20 +44,11 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8):
     overlay_dir = os.path.join(qc_dir, "overlays")
     os.makedirs(overlay_dir, exist_ok=True)
 
-    df = parse_bids(bids_dir, workers=n_procs, logger=logger)
-
     if sub:
-        if 'sub-' in sub:
-            sub = sub.split('-')[-1]
-        # Check if sub matches the available subjects
-        if sub not in df['sub'].unique():
-            logger.error(f"Subject {sub} not found in the DataFrame. Available subjects: {df['sub'].unique()}")
-            print(Fore.RED + f"Subject {sub} not found in the DataFrame. Available subjects: {df['sub'].unique()}" + Style.RESET_ALL)
-            return False
-        
-        df = df[df['sub'] == sub]
-        
-    #df.to_csv(csv_file, index=False)
+        if isinstance(sub, str):
+            sub = [sub]
+
+    df = parse_bids(bids_dir, sub, workers=n_procs, logger=logger)
     
     for col in df.columns:
         if isinstance(df[col].iloc[0], dict):

@@ -13,7 +13,7 @@ def run():
     parser.add_argument("-d", "--bids_dir", required=True, help="Path to the BIDS directory")
     parser.add_argument("-o", "--qc_dir", required=True, help="Path to the QC output directory")
     parser.add_argument("-c", "--config", required=False, help="Config file")
-    parser.add_argument("-s", "--sub", required=False, help="Specify subject/participant label")
+    parser.add_argument("-s", "--sub", nargs='+', required=False, help="Specify subject/participant label(s)")
     parser.add_argument("-n", "--n_procs", type=int, default=8, help="Number of processes to use for multiprocessing")
     parser.add_argument("-v", "--version", action='version', version=f'%(prog)s {__version__}', help="Show the version number and exit")
     

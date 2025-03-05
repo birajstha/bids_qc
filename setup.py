@@ -20,6 +20,9 @@ setup(
     url='https://github.com/birajstha/bids_qc',  
     packages=find_packages(),
     install_requires=requirements,
+    dependency_links=[
+        'git+https://github.com/birajstha/bids2table.git@main#egg=bids2table'
+    ],
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',  # Replace with your license
