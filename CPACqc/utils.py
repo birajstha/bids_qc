@@ -26,7 +26,7 @@ def get_file_info(file_path):
     if len(dimension) == 4:
         # get TR info
         tr = float(img.header.get_zooms()[3])
-        nos_tr = int(img.shape[-1])
+        nos_tr = tuple(int(img.shape[-1]))
     else:
         tr = None
         nos_tr = None
@@ -213,10 +213,15 @@ def make_pdf(qc_dir, pdf_name="report.pdf"):
                     file_info = json.loads(image_data['file_info'])
                     file_info_text = [
                         f"Dimensions: {file_info['dimension']}",
-                        f"Resolution: {file_info['resolution']}",
-                        f"TR: {file_info['tr'] if file_info['tr'] is not None else 'N/A'}",
-                        f"No of TRs: {file_info['nos_tr'] if file_info['nos_tr'] is not None else 'N/A'}"
+                        f"Resolution: {[round(res, 2) for res in file_info['resolution']]}"
                     ]
+
+                    if file_info['tr'] is not None:
+                        file_info_text.append(f"TR: {file_info['tr']}")
+
+                    if file_info['nos_tr'] is not None:
+                        file_info_text.append(f"No of TRs: {file_info['nos_tr']}")
+                        
                     c.setFont("Helvetica", 8)  # Use smaller font for the file info
                     for i, line in enumerate(file_info_text):
                         c.drawString(10, y_position - img_height - 25 - (i * 10), line)
