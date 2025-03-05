@@ -26,7 +26,7 @@ def get_file_info(file_path):
     if len(dimension) == 4:
         # get TR info
         tr = float(img.header.get_zooms()[3])
-        nos_tr = img.shape[-1]
+        nos_tr = int(img.shape[-1])
     else:
         tr = None
         nos_tr = None
@@ -161,9 +161,9 @@ def make_pdf(qc_dir, pdf_name="report.pdf"):
     # Add CPAC logo and description to the front page
     logo_path = 'https://avatars.githubusercontent.com/u/2230402?s=200&v=4'  # Adjust the path as needed
     logo_img = ImageReader(logo_path)
-    logo_width = 100  # Adjust the logo width
-    logo_height = 100  # Adjust the logo height
-    c.drawImage(logo_img, (width - logo_width) / 2, height - 100, width=logo_width, height=logo_height)
+    logo_width = 150  # Adjust the logo width
+    logo_height = 150  # Adjust the logo height
+    c.drawImage(logo_img, (width - logo_width) / 2, (height - logo_height) / 2, width=logo_width, height=logo_height)
     c.setFont("Helvetica", 20)
     c.drawString(70, height - 130, "CPAC Quality Control Report")
     c.setFont("Helvetica", 12)
@@ -188,8 +188,17 @@ def make_pdf(qc_dir, pdf_name="report.pdf"):
                     img_width = 200  # Adjust the width as needed
                     img_height = 150  # Adjust the height as needed
 
+                    # Preserve aspect ratio
+                    aspect_ratio = img_width / img_height
+                    if aspect_ratio > 1:
+                        img_width = 200
+                        img_height = img_width / aspect_ratio
+                    else:
+                        img_height = 150
+                        img_width = img_height * aspect_ratio
+
                     # Check if the image fits on the current page, otherwise add a new page
-                    if y_position - img_height - 60 < 0:  # Adjusted to account for additional text
+                    if y_position - img_height - 80 < 0:  # Adjusted to account for additional text and white space
                         c.showPage()
                         y_position = height - 30  # Reset y_position for the new page
 
@@ -212,7 +221,7 @@ def make_pdf(qc_dir, pdf_name="report.pdf"):
                         c.drawString(10, y_position - img_height - 25 - (i * 10), line)
 
                     # Move to the next row after each image
-                    y_position -= img_height + 60  # Adjusted to account for additional text
+                    y_position -= img_height + 80  # Adjusted to account for additional text and white space
 
     # Save the PDF
     c.save()
