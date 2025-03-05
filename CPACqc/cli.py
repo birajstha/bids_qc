@@ -32,7 +32,7 @@ def run():
     except Exception as e:
         print(f"Error copying templates: {e}")
         return  # Exit the function if an error occurs
-
+    print(args.sub)
     not_plotted = main(args.bids_dir, args.qc_dir, args.config, args.sub, args.n_procs)
     if len(not_plotted) > 0:
         print(Fore.RED + "Some files were not plotted. Please check the log for details.")
