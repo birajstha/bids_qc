@@ -30,7 +30,7 @@ def setup_logger(qc_dir):
     
     return logger
 
-def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8):
+def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8, pdf=False):
     os.makedirs(qc_dir, exist_ok=True)
     logger = setup_logger(qc_dir)
     
@@ -139,6 +139,13 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8):
                     print(Fore.RED + f"Error processing {futures[future]}: {e}\n Try with lower number of processes" + Style.RESET_ALL)
                 logger.error(f"Error processing {futures[future]}: {e}, Try with a lower number of processes")
                 not_plotted.append(futures[future])
+    if pdf:
+        try:
+            make_pdf(qc_dir, pdf)
+        except Exception as e:
+            logger.error(f"Error generating PDF: {e}")
+            print(Fore.RED + f"Error generating PDF: {e}" + Style.RESET_ALL)
+    
     return not_plotted
     
 if __name__ == "__main__":
@@ -146,10 +153,13 @@ if __name__ == "__main__":
 
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Process BIDS directory and generate QC plots.")
-    parser.add_argument("--bids_dir", required=True, help="Path to the BIDS directory")
-    parser.add_argument("--qc_dir", required=True, help="Path to the QC output directory")
-    parser.add_argument("--config", required=False, help="Config file")
-    parser.add_argument("--n_procs", type=int, default=10, help="Number of processes to use for multiprocessing")
+    parser.add_argument("-d", "--bids_dir", required=True, help="Path to the BIDS directory")
+    parser.add_argument("-o", "--qc_dir", required=True, help="Path to the QC output directory")
+    parser.add_argument("-c", "--config", required=False, help="Config file")
+    parser.add_argument("-s", "--sub", nargs='+', required=False, help="Specify subject/participant label(s) to process")
+    parser.add_argument("-n", "--n_procs", type=int, default=8, help="Number of processes to use for multiprocessing")
+    parser.add_argument("-v", "--version", action='version', version=f'%(prog)s {__version__}', help="Show the version number and exit")
+    parser.add_argument("-pdf", "--pdf", required=False, help="Generate PDF report")
 
     args = parser.parse_args()
-    main(args.bids_dir, args.qc_dir, args.config, args.n_procs)
+    main(args.bids_dir, args.qc_dir, args.config, args.sub, args.n_procs, args.pdf)

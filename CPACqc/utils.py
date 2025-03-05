@@ -14,6 +14,11 @@ from CPACqc.bids2table._b2t import bids2table
 import json
 import re
 
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
+
+
 def get_file_info(file_path):
     img = nib.load(file_path)
     resolution = tuple(float(x) for x in img.header.get_zooms())
@@ -21,9 +26,11 @@ def get_file_info(file_path):
     if len(dimension) == 4:
         # get TR info
         tr = float(img.header.get_zooms()[3])
+        nos_tr = str(int(img.shape[-1]))
     else:
         tr = None
-    return json.dumps({"resolution": resolution, "dimension": dimension, "tr": tr})
+        nos_tr = None
+    return json.dumps({"resolution": resolution, "dimension": dimension, "tr": tr, "nos_tr": nos_tr})
 
 def gen_resource_name(row):
     sub = row["sub"]
@@ -136,3 +143,92 @@ def parse_bids(base_dir, sub=None, workers=8, logger=None):
 
 def run_wrapper(args):
     return run(*args)
+
+def make_pdf(qc_dir, pdf_name="report.pdf"):
+    print(Fore.YELLOW + "Generating PDF report..." + Style.RESET_ALL)
+
+    # Read the CSV file
+    csv_data = pd.read_csv(os.path.join(qc_dir, "results.csv"))
+
+    # Handle .pdf in pdf_name
+    if pdf_name[-4:] != ".pdf":
+        pdf_name += ".pdf"
+
+    pdf_path = os.path.join(qc_dir, pdf_name)
+    c = canvas.Canvas(pdf_path, pagesize=letter)
+    width, height = letter
+
+    # Add CPAC logo and description to the front page
+    logo_path = 'https://avatars.githubusercontent.com/u/2230402?s=200&v=4'  # Adjust the path as needed
+    logo_img = ImageReader(logo_path)
+    logo_width = 150  # Adjust the logo width
+    logo_height = 150  # Adjust the logo height
+    c.drawImage(logo_img, (width - logo_width) / 2, (height - logo_height) / 2, width=logo_width, height=logo_height)
+    c.setFont("Helvetica", 20)
+    c.drawString(70, height - 130, "CPAC Quality Control Report")
+    c.setFont("Helvetica", 12)
+
+    # Add an initial page to skip the first page
+    c.showPage()
+
+    y_position = height - 30  # Start at the top of the new page
+
+    # Get unique subjects and sort them in ascending order
+    subjects = sorted(set(csv_data['sub']))
+
+    # Add all images to the PDF, grouped by subject
+    for subject in subjects:
+        subject_images = csv_data[csv_data['sub'] == subject]
+
+        if not subject_images.empty:
+            for _, image_data in subject_images.iterrows():
+                image_path = os.path.join(qc_dir, image_data['relative_path'])
+                if os.path.exists(image_path):
+                    img = ImageReader(image_path)
+                    max_img_width = width - 20  # Adjust the max width to fit the page
+                    max_img_height = height / 2  # Adjust the max height to fit the page
+
+                    # Preserve aspect ratio
+                    img_width, img_height = img.getSize()
+                    aspect_ratio = img_width / img_height
+                    if aspect_ratio > 1:
+                        img_width = max_img_width
+                        img_height = img_width / aspect_ratio
+                    else:
+                        img_height = max_img_height
+                        img_width = img_height * aspect_ratio
+
+                    # Check if the image fits on the current page, otherwise add a new page
+                    if y_position - img_height - 80 < 0:  # Adjusted to account for additional text and white space
+                        c.showPage()
+                        y_position = height - 30  # Reset y_position for the new page
+
+                    # Add the image to the PDF
+                    c.drawImage(img, (width - img_width) / 2, y_position - img_height, width=img_width, height=img_height)
+                    c.setFont("Helvetica", 10)  # Use smaller font for the file name
+                    label = f"{image_data['sub']}_{image_data['file_name']}"
+                    c.drawString(10, y_position - img_height - 10, label)
+
+                    # Add file information under the image label
+                    file_info = json.loads(image_data['file_info'])
+                    file_info_text = [
+                        f"Dimensions: {file_info['dimension']}",
+                        f"Resolution: {[round(res, 2) for res in file_info['resolution']]}"
+                    ]
+
+                    if file_info['tr'] is not None:
+                        file_info_text.append(f"TR: {file_info['tr']}")
+
+                    if file_info['nos_tr'] is not None:
+                        file_info_text.append(f"No of TRs: {file_info['nos_tr']}")
+
+                    c.setFont("Helvetica", 8)  # Use smaller font for the file info
+                    for i, line in enumerate(file_info_text):
+                        c.drawString(10, y_position - img_height - 25 - (i * 10), line)
+
+                    # Move to the next row after each image
+                    y_position -= img_height + 80  # Adjusted to account for additional text and white space
+
+    # Save the PDF
+    c.save()
+    print(Fore.GREEN + "PDF report generated successfully." + Style.RESET_ALL)

@@ -66,6 +66,18 @@ desc-preproc_bold, desc-preproc_T1w
 
 and so on.
 
+5. **Generating PDF**
+
+You can generate pdf by loading the HTML report and then clicking `Generate PDF` button.
+or,
+you can generate pdf report directly by providing -pdf or --pdf flag
+
+```bash
+cpacqc -d path/to/bids_dir -o qc_dir -c ./overlay.csv -pdf cpac_report
+```
+
+This will create pdf file named `cpac_report.pdf` in the output `qc dir`
+
 ## Viewing
 
 Use any .html viewer extension to view index.html
