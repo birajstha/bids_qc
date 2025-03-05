@@ -6,11 +6,11 @@ from tqdm import tqdm
 from functools import lru_cache
 import tempfile
 
-from bids2table import bids2table
 import nibabel as nib
 from colorama import Fore, Style, init
 
 from CPACqc.plot import run
+from CPACqc.bids2table import bids2table
 import json
 import re
 
