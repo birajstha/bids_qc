@@ -45,7 +45,6 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8):
     os.makedirs(overlay_dir, exist_ok=True)
 
     if sub:
-        print(f"sub : {sub}")
         if isinstance(sub, str):
             sub = [sub]
 
