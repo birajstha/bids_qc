@@ -161,9 +161,11 @@ def make_pdf(qc_dir, pdf_name="report.pdf"):
     # Add CPAC logo and description to the front page
     logo_path = 'https://avatars.githubusercontent.com/u/2230402?s=200&v=4'  # Adjust the path as needed
     logo_img = ImageReader(logo_path)
-    c.drawImage(logo_img, 10, height - 60, width=50, height=50)
+    logo_width = 100  # Adjust the logo width
+    logo_height = 100  # Adjust the logo height
+    c.drawImage(logo_img, (width - logo_width) / 2, height - 100, width=logo_width, height=logo_height)
     c.setFont("Helvetica", 20)
-    c.drawString(70, height - 30, "CPAC Quality Control Report")
+    c.drawString(70, height - 130, "CPAC Quality Control Report")
     c.setFont("Helvetica", 12)
 
     # Add an initial page to skip the first page
@@ -183,11 +185,11 @@ def make_pdf(qc_dir, pdf_name="report.pdf"):
                 image_path = os.path.join(qc_dir, image_data['relative_path'])
                 if os.path.exists(image_path):
                     img = ImageReader(image_path)
-                    img_width = 180  # Adjust the width as needed
-                    img_height = 100  # Adjust the height as needed
+                    img_width = 200  # Adjust the width as needed
+                    img_height = 150  # Adjust the height as needed
 
                     # Check if the image fits on the current page, otherwise add a new page
-                    if y_position - img_height - 40 < 0:  # Adjusted to account for additional text
+                    if y_position - img_height - 60 < 0:  # Adjusted to account for additional text
                         c.showPage()
                         y_position = height - 30  # Reset y_position for the new page
 
@@ -210,7 +212,7 @@ def make_pdf(qc_dir, pdf_name="report.pdf"):
                         c.drawString(10, y_position - img_height - 25 - (i * 10), line)
 
                     # Move to the next row after each image
-                    y_position -= img_height + 40  # Adjusted to account for additional text
+                    y_position -= img_height + 60  # Adjusted to account for additional text
 
     # Save the PDF
     c.save()
