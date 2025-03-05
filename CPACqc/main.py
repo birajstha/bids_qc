@@ -9,7 +9,7 @@ import logging
 
 from CPACqc.utils import *
 from CPACqc.plot import run
-from CPACqc.bids2table import bids2table
+from CPACqc.bids2table._b2t import bids2table
 
 def setup_logger(qc_dir):
     # setup logger
