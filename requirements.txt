@@ -40,6 +40,7 @@ pyparsing==3.2.1
 python-dateutil==2.9.0.post0
 pytz==2025.1
 readme_renderer==44.0
+reportlab==4.3.1
 requests==2.32.3
 requests-toolbelt==1.0.0
 rfc3986==2.0.0
@@ -56,4 +57,3 @@ tzdata==2025.1
 urllib3==2.3.0
 zipp==3.21.0
 setuptools==75.8.2
-weasyprint==64.1

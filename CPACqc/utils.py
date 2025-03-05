@@ -14,6 +14,11 @@ from CPACqc.bids2table._b2t import bids2table
 import json
 import re
 
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
+
+
 def get_file_info(file_path):
     img = nib.load(file_path)
     resolution = tuple(float(x) for x in img.header.get_zooms())
@@ -137,9 +142,59 @@ def parse_bids(base_dir, sub=None, workers=8, logger=None):
 def run_wrapper(args):
     return run(*args)
 
-from weasyprint import HTML
 
 def make_pdf(qc_dir, pdf_name="report.pdf"):
     print(Fore.YELLOW + "Generating PDF report..." + Style.RESET_ALL)
-    HTML(f"{qc_dir}/index.html").write_pdf(f"{qc_dir}/{pdf_name}.pdf")
+
+    # Read the CSV file
+    csv_data = pd.read_csv(os.path.join(qc_dir, "results.csv"))
+
+    pdf_path = os.path.join(qc_dir, pdf_name)
+    c = canvas.Canvas(pdf_path, pagesize=letter)
+    width, height = letter
+
+    # Add CPAC logo and description to the front page
+    logo_path = 'https://avatars.githubusercontent.com/u/2230402?s=200&v=4'  # Adjust the path as needed
+    logo_img = ImageReader(logo_path)
+    c.drawImage(logo_img, 10, height - 60, width=50, height=50)
+    c.setFont("Helvetica", 20)
+    c.drawString(70, height - 30, "CPAC Quality Control Report")
+    c.setFont("Helvetica", 12)
+
+    # Add an initial page to skip the first page
+    c.showPage()
+
+    y_position = height - 30  # Start at the top of the new page
+
+    # Get unique subjects and sort them in ascending order
+    subjects = sorted(set(csv_data['sub']))
+
+    # Add all images to the PDF, grouped by subject
+    for subject in subjects:
+        subject_images = csv_data[csv_data['sub'] == subject]
+
+        if not subject_images.empty:
+            for _, image_data in subject_images.iterrows():
+                image_path = os.path.join(qc_dir, image_data['relative_path'])
+                if os.path.exists(image_path):
+                    img = ImageReader(image_path)
+                    img_width = 180  # Adjust the width as needed
+                    img_height = 100  # Adjust the height as needed
+
+                    # Check if the image fits on the current page, otherwise add a new page
+                    if y_position - img_height - 20 < 0:
+                        c.showPage()
+                        y_position = height - 30  # Reset y_position for the new page
+
+                    # Add the image to the PDF
+                    c.drawImage(img, 10, y_position - img_height, width=img_width, height=img_height)
+                    c.setFont("Helvetica", 10)  # Use smaller font for the file name
+                    label = f"{image_data['sub']}_{image_data['file_name']}"
+                    c.drawString(10, y_position - img_height - 10, label)
+
+                    # Move to the next row after each image
+                    y_position -= img_height + 20
+
+    # Save the PDF
+    c.save()
     print(Fore.GREEN + "PDF report generated successfully." + Style.RESET_ALL)
