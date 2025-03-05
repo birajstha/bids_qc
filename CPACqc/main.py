@@ -49,6 +49,7 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8):
             sub = [sub]
 
     df = parse_bids(bids_dir, sub=sub, workers=n_procs, logger=logger)
+
     
     for col in df.columns:
         if isinstance(df[col].iloc[0], dict):
