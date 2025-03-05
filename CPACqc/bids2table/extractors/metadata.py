@@ -6,7 +6,7 @@ from pathlib import Path
 from elbow.record import Record
 from elbow.typing import StrOrPath
 
-from bids2table.entities import parse_bids_entities
+from CPACqc.bids2table.entities import parse_bids_entities
 
 from .inheritance import _glob, find_bids_parents
 

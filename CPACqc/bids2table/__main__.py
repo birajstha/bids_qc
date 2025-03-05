@@ -2,8 +2,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from bids2table import bids2table
-from bids2table.logging import setup_logging
+from CPACqc.bids2table import bids2table
+from CPACqc.bids2table.logging import setup_logging
 
 
 def main():

@@ -4,7 +4,7 @@ from typing import Dict, Generator, List, Optional
 
 from elbow.typing import StrOrPath
 
-from bids2table.entities import parse_bids_entities
+from CPACqc.bids2table.entities import parse_bids_entities
 
 from .dataset import is_dataset_root
 

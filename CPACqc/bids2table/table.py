@@ -5,8 +5,8 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Union
 
 import pandas as pd
 
-from bids2table.entities import ENTITY_NAMES_TO_KEYS, BIDSEntities
-from bids2table.extractors.metadata import extract_metadata
+from CPACqc.bids2table.entities import ENTITY_NAMES_TO_KEYS, BIDSEntities
+from CPACqc.bids2table.extractors.metadata import extract_metadata
 
 
 class BIDSTable(pd.DataFrame):

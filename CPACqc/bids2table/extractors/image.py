@@ -7,7 +7,7 @@ from elbow.record import Record
 from elbow.typing import StrOrPath
 from nibabel.filebasedimages import ImageFileError
 
-from bids2table.entities import parse_bids_entities
+from CPACqc.bids2table.entities import parse_bids_entities
 
 try:
     import nifti

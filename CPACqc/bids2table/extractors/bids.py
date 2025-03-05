@@ -7,7 +7,7 @@ from elbow.record import Record, concat
 from elbow.sources.filesystem import Crawler
 from elbow.typing import StrOrPath
 
-from bids2table.entities import BIDSEntities
+from CPACqc.bids2table.entities import BIDSEntities
 
 from .dataset import extract_dataset
 from .metadata import extract_metadata, is_associated_sidecar
