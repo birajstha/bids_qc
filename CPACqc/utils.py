@@ -26,10 +26,11 @@ def get_file_info(file_path):
     if len(dimension) == 4:
         # get TR info
         tr = float(img.header.get_zooms()[3])
-        nos_tr = img.header.pixdim[4]
+        nos_tr = img.shape[-1]
     else:
         tr = None
-    return json.dumps({"resolution": resolution, "dimension": dimension, "tr": tr, "No. of TRs": nos_tr})
+        nos_tr = None
+    return json.dumps({"resolution": resolution, "dimension": dimension, "tr": tr, "nos_tr": nos_tr})
 
 def gen_resource_name(row):
     sub = row["sub"]
@@ -143,14 +144,13 @@ def parse_bids(base_dir, sub=None, workers=8, logger=None):
 def run_wrapper(args):
     return run(*args)
 
-
 def make_pdf(qc_dir, pdf_name="report.pdf"):
     print(Fore.YELLOW + "Generating PDF report..." + Style.RESET_ALL)
 
     # Read the CSV file
     csv_data = pd.read_csv(os.path.join(qc_dir, "results.csv"))
 
-    #handle .pdf in pdf_name
+    # Handle .pdf in pdf_name
     if pdf_name[-4:] != ".pdf":
         pdf_name += ".pdf"
 
@@ -187,7 +187,7 @@ def make_pdf(qc_dir, pdf_name="report.pdf"):
                     img_height = 100  # Adjust the height as needed
 
                     # Check if the image fits on the current page, otherwise add a new page
-                    if y_position - img_height - 20 < 0:
+                    if y_position - img_height - 40 < 0:  # Adjusted to account for additional text
                         c.showPage()
                         y_position = height - 30  # Reset y_position for the new page
 
@@ -197,8 +197,20 @@ def make_pdf(qc_dir, pdf_name="report.pdf"):
                     label = f"{image_data['sub']}_{image_data['file_name']}"
                     c.drawString(10, y_position - img_height - 10, label)
 
+                    # Add file information under the image label
+                    file_info = json.loads(image_data['file_info'])
+                    file_info_text = [
+                        f"Dimensions: {file_info['dimension']}",
+                        f"Resolution: {file_info['resolution']}",
+                        f"TR: {file_info['tr'] if file_info['tr'] is not None else 'N/A'}",
+                        f"No of TRs: {file_info['nos_tr'] if file_info['nos_tr'] is not None else 'N/A'}"
+                    ]
+                    c.setFont("Helvetica", 8)  # Use smaller font for the file info
+                    for i, line in enumerate(file_info_text):
+                        c.drawString(10, y_position - img_height - 25 - (i * 10), line)
+
                     # Move to the next row after each image
-                    y_position -= img_height + 20
+                    y_position -= img_height + 40  # Adjusted to account for additional text
 
     # Save the PDF
     c.save()

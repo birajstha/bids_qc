@@ -419,6 +419,11 @@
                                       ? formatNumber(fileInfo.tr)
                                       : "N/A"
                                   }
+                                  No. of TRs: ${
+                                    fileInfo.nos_tr !== null
+                                      ? formatNumber(fileInfo.nos_tr)
+                                      : "N/A"
+                                  }
                                 </p>
                               </div>
                             </div>`;
@@ -619,6 +624,9 @@
                               fileInfo.tr !== null
                                 ? fileInfo.tr.toFixed(2)
                                 : "N/A"
+                            }`,
+                            `No of TRs: ${
+                              fileInfo.nos_tr !== null ? fileInfo.nos_tr : "N/A"
                             }`,
                           ].join("\n");
                           const fileInfoLines = doc.splitTextToSize(
