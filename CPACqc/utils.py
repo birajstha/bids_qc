@@ -23,6 +23,9 @@ def get_file_info(file_path):
     img = nib.load(file_path)
     resolution = tuple(float(x) for x in img.header.get_zooms())
     dimension = tuple(int(x) for x in img.shape)
+    affine = img.affine
+    orientation = ''.join(nib.aff2axcodes(affine))
+    
     if len(dimension) == 4:
         # get TR info
         tr = float(img.header.get_zooms()[3])
@@ -30,7 +33,14 @@ def get_file_info(file_path):
     else:
         tr = None
         nos_tr = None
-    return json.dumps({"resolution": resolution, "dimension": dimension, "tr": tr, "nos_tr": nos_tr})
+
+    return json.dumps({
+        "resolution": resolution,
+        "dimension": dimension,
+        "tr": tr,
+        "nos_tr": nos_tr,
+        "orientation": orientation
+    })
 
 def gen_resource_name(row):
     sub = row["sub"]
@@ -144,17 +154,22 @@ def parse_bids(base_dir, sub=None, workers=8, logger=None):
 def run_wrapper(args):
     return run(*args)
 
-def make_pdf(qc_dir, pdf_name="report.pdf"):
+def make_pdf(qc_dir, pdf):
     print(Fore.YELLOW + "Generating PDF report..." + Style.RESET_ALL)
 
     # Read the CSV file
     csv_data = pd.read_csv(os.path.join(qc_dir, "results.csv"))
 
     # Handle .pdf in pdf_name
-    if pdf_name[-4:] != ".pdf":
-        pdf_name += ".pdf"
+    if not pdf.endswith(".pdf"):
+        pdf += ".pdf"
 
-    pdf_path = os.path.join(qc_dir, pdf_name)
+    # Determine if pdf is a full path or just a file name
+    if os.path.isabs(pdf):
+        pdf_path = pdf
+    else:
+        pdf_path = os.path.join(os.getcwd(), pdf)
+
     c = canvas.Canvas(pdf_path, pagesize=letter)
     width, height = letter
 
@@ -212,6 +227,7 @@ def make_pdf(qc_dir, pdf_name="report.pdf"):
                     # Add file information under the image label
                     file_info = json.loads(image_data['file_info'])
                     file_info_text = [
+                        f"Orientation: {file_info['orientation']}",
                         f"Dimensions: {file_info['dimension']}",
                         f"Resolution: {[round(res, 2) for res in file_info['resolution']]}"
                     ]

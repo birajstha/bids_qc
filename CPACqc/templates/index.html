@@ -104,7 +104,7 @@
         <!-- Main content -->
         <div class="col-md-8 col-12 offset-md-2">
           <h4 class="mt-4 sticky-title text-center" id="title">
-            CPAC - QC DASHBOARD
+            QC REPORT
           </h4>
           <hr />
           <div class="tab-content" id="tabContentContainer"></div>
@@ -408,6 +408,7 @@
                         <div class="card-body d-flex flex-column">
                           <h6 class="card-title">${imageName}</h6>
                           <p class="card-text">
+                            Orientation: ${fileInfo.orientation}<br>
                             Dimensions: ${fileInfo.dimension.join(" x ")}<br>
                             Resolution: ${fileInfo.resolution
                               .map(formatNumber)
@@ -487,6 +488,7 @@
                   <div class="card-body d-flex flex-column">
                     <h6 class="card-title">${imageName}</h6>
                     <p class="card-text">
+                      Orientation: ${fileInfo.orientation}<br>
                       Dimensions: ${fileInfo.dimension.join(" x ")}<br>
                       Resolution: ${fileInfo.resolution
                         .map(formatNumber)

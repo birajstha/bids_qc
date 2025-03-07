@@ -77,10 +77,6 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8, pdf=False):
 
     nii_gz_files = nii_gz_files[nii_gz_files.file_path.apply(lambda x: is_3d_or_4d(x, logger))]
 
-    # save nii_gz_files to csv
-    nii_gz_files_csv_path = os.path.join(qc_dir, "nii_gz_files.csv")
-    nii_gz_files.to_csv(nii_gz_files_csv_path, index=False)
-
     # for rows in overlay_csv find the resource_name and get the rows
     if config:
         overlay_df = pd.read_csv(config)
