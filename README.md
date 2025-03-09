@@ -11,6 +11,7 @@ The CPAC-qc Plotting App is a tool designed to generate quality control plots fo
 ## Features
 
 - Generate bulk or subject specific plots
+- Outputs PDF and/or HTML report
 
 ## Requirements
 
@@ -48,7 +49,7 @@ cpacqc -d path/to/bids_dir -o path/to/output-qc-dir
 or simply
 
 ```bash
-cpacqc -d path/to/bids_dir -o path/to/output-qc-dir
+cpacqc -d path/to/bids_dir
 ```
 
 4. **Plotting Overlays**
