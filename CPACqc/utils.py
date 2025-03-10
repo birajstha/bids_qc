@@ -221,7 +221,7 @@ def make_pdf(qc_dir, pdf):
                     # Add the image to the PDF
                     c.drawImage(img, (width - img_width) / 2, y_position - img_height, width=img_width, height=img_height)
                     c.setFont("Helvetica", 10)  # Use smaller font for the file name
-                    label = f"{image_data['sub']}_{image_data['file_name']}"
+                    label = f"{image_data['file_name']}"
                     c.drawString(10, y_position - img_height - 10, label)
 
                     # Add file information under the image label
