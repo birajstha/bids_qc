@@ -67,8 +67,10 @@ def run():
     else:
         #remane the qc_dir to results
         new_qc_dir = os.path.join(os.getcwd(), 'results')
-        print(Fore.YELLOW + f"Creating results dir: {new_qc_dir}")
+        print(Fore.YELLOW + f"Creating HTML report in results dir: {new_qc_dir}")
         print(Style.RESET_ALL)
+        shutil.move(args.qc_dir, new_qc_dir)
+        print(Fore.YELLOW + "Done.")
 
     if len(not_plotted) > 0:
         print(Fore.RED + "Some files were not plotted. Please check the log for details.")

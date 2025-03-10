@@ -11,12 +11,12 @@ The CPAC-qc Plotting App is a tool designed to generate quality control plots fo
 ## Features
 
 - Generate bulk or subject specific plots
-- Outputs PDF and/or HTML report
+- Outputs PDF (default) and HTML report (with -html flag)
 
 ## Requirements
 
-- A html viewing tool or extension
 - BIDS dir with `.nii.gz` images in it.
+- (Optional) A html viewing tool or extension
 
 ## Installation
 
@@ -26,7 +26,35 @@ pip install CPACqc
 
 ## Usage
 
-1. **Running Single Subject with defined number of procs**
+
+1. **Minimal code**
+
+```bash
+cpacqc -d bids_dir
+```
+
+This will output a pdf report `report.pdf` in your current directory.
+
+
+2. **HTML report**
+
+```bash
+cpacqc -d bids_dir -html
+```
+
+This will create a pdf `report.pdf` along with a `results` dir with HTML report `index.html` and related files.
+
+
+3. **Running single/multiple Subjects**
+
+```bash
+cpacqc -d path/to/bids_dir -o path/to/output-qc-dir -s subject-id_1 subject-id_2
+```
+
+You can hand pick a singl or a few subjects with `-s` flag
+
+
+4. **Running Single Subject with defined number of procs**
 
 ```bash
 cpacqc -d path/to/bids_dir -o path/to/output-qc-dir -s subject-id -n number-of-procs
@@ -34,13 +62,8 @@ cpacqc -d path/to/bids_dir -o path/to/output-qc-dir -s subject-id -n number-of-p
 
 Note: if -n is not provided default is 8
 
-2. **Running multiple Subjects**
 
-```bash
-cpacqc -d path/to/bids_dir -o path/to/output-qc-dir -s subject-id_1 subject-id_2
-```
-
-3. **Running all Subjects in the dir**
+5. **Running all Subjects in the dir**
 
 ```bash
 cpacqc -d path/to/bids_dir -o path/to/output-qc-dir
@@ -52,7 +75,8 @@ or simply
 cpacqc -d path/to/bids_dir
 ```
 
-4. **Plotting Overlays**
+
+6. **Plotting Overlays**
 
 ```bash
 cpacqc -d path/to/bids_dir -o qc_dir -c ./overlay.csv
@@ -67,17 +91,6 @@ desc-preproc_bold, desc-preproc_T1w
 
 and so on.
 
-5. **Generating PDF**
-
-You can generate pdf by loading the HTML report and then clicking `Generate PDF` button.
-or,
-you can generate pdf report directly by providing -pdf or --pdf flag
-
-```bash
-cpacqc -d path/to/bids_dir -o qc_dir -c ./overlay.csv -pdf cpac_report
-```
-
-This will create pdf file named `cpac_report.pdf` in the output `qc dir`
 
 ## Viewing
 
