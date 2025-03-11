@@ -611,14 +611,13 @@
                             imgHeight
                           );
                           doc.setFontSize(10); // Use smaller font for the file name
-                          const label = `${imageData.file_name}`;
+                          const label = `${imageData.sub}_${imageData.file_name}`;
                           const lines = doc.splitTextToSize(label, imgWidth);
                           doc.text(lines, 10, yPosition + imgHeight + 5);
 
                           // Add file info
                           const fileInfo = JSON.parse(imageData.file_info);
                           const fileInfoText = [
-                            `Orientation: ${fileInfo.orientation}`,
                             `Dimensions: ${fileInfo.dimension.join(" x ")}`,
                             `Resolution: ${fileInfo.resolution
                               .map((num) => num.toFixed(2))

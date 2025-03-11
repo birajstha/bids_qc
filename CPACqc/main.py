@@ -77,6 +77,17 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8, pdf=False):
 
     nii_gz_files = nii_gz_files[nii_gz_files.file_path.apply(lambda x: is_3d_or_4d(x, logger))]
 
+    def fill_space(row):
+        if row["space"] == "":
+            if row["datatype"] == "anat":
+                return "T1w"
+            elif row["datatype"] == "func":
+                return "bold"
+        return row["space"]
+
+    # check if the space column is empty and if empty fill it with T1w if the datatype is anat or with bold if datatype is func, if not empty leave it
+    nii_gz_files.loc[:, "space"] = nii_gz_files.apply(lambda x: fill_space(x), axis=1)
+
     # for rows in overlay_csv find the resource_name and get the rows
     if config:
         overlay_df = pd.read_csv(config)

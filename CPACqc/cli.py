@@ -65,10 +65,15 @@ def run():
         print(Style.RESET_ALL)
         shutil.rmtree(args.qc_dir)
     else:
-        #remane the qc_dir to results
+        # Rename the qc_dir to results
         new_qc_dir = os.path.join(os.getcwd(), 'results')
         print(Fore.YELLOW + f"Creating HTML report in results dir: {new_qc_dir}")
         print(Style.RESET_ALL)
+        
+        # Check if the results directory already exists and remove it if it does
+        if os.path.exists(new_qc_dir):
+            shutil.rmtree(new_qc_dir)
+        
         shutil.move(args.qc_dir, new_qc_dir)
         print(Fore.YELLOW + "Done.")
 

@@ -7,6 +7,7 @@ from functools import lru_cache
 import tempfile
 
 import nibabel as nib
+from nibabel.orientations import io_orientation, ornt2axcodes
 from colorama import Fore, Style, init
 
 from CPACqc.plot import run
@@ -17,14 +18,18 @@ import re
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
+from reportlab.platypus import Paragraph, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
 
 
 def get_file_info(file_path):
     img = nib.load(file_path)
     resolution = tuple(float(x) for x in img.header.get_zooms())
     dimension = tuple(int(x) for x in img.shape)
+    
     affine = img.affine
-    orientation = ''.join(nib.aff2axcodes(affine))
+    orientation =  "".join(ornt2axcodes(io_orientation(affine))) + " @nibabel"
     
     if len(dimension) == 4:
         # get TR info
@@ -62,12 +67,16 @@ def gen_resource_name(row):
 
 # add a utility function to return rows provided a resource_name
 def get_rows_by_resource_name(resource_name, nii_gz_files, logger):
-    # get all rows that have the resource_name
-    rows = nii_gz_files[nii_gz_files.resource_name == resource_name]
-    if len(rows) == 0:
-        logger.error(f"NOT FOUND: {resource_name}")
+    # Ensure nii_gz_files is a DataFrame and access the correct column
+    if isinstance(nii_gz_files, pd.DataFrame):
+        rows = nii_gz_files[nii_gz_files['resource_name'].str.endswith(resource_name)]
+        if len(rows) == 0:
+            logger.error(f"NOT FOUND: {resource_name}")
+            return None
+        return rows
+    else:
+        logger.error("nii_gz_files is not a DataFrame")
         return None
-    return rows
 
 # check file_path and drop the ones that are higher dimensions for now
 def is_3d_or_4d(file_path, logger):
@@ -111,20 +120,22 @@ def process_row(row, nii_gz_files, overlay_dir, plots_dir, logger):
     for _, res1_row in resource_name_1.iterrows():
         if resource_name_2 is not None:
             for _, res2_row in resource_name_2.iterrows():
-                file_name = gen_filename(res1_row, res2_row)
-                if file_name not in seen:
-                    seen.add(file_name)
-                    sub_dir = create_directory(res1_row['sub'], res1_row['ses'], overlay_dir)
-                    plot_path = generate_plot_path(sub_dir, file_name)
-                    result_rows.append({
-                        "sub": res1_row["sub"],
-                        "ses": res1_row["ses"],
-                        "file_path_1": res1_row["file_path"],
-                        "file_path_2": res2_row["file_path"],
-                        "file_name": file_name,
-                        "plots_dir": overlay_dir,
-                        "plot_path": plot_path
-                    })
+                # Check if the space column matches
+                if res1_row['space'] == res2_row['space']:
+                    file_name = gen_filename(res1_row, res2_row)
+                    if file_name not in seen:
+                        seen.add(file_name)
+                        sub_dir = create_directory(res1_row['sub'], res1_row['ses'], overlay_dir)
+                        plot_path = generate_plot_path(sub_dir, file_name)
+                        result_rows.append({
+                            "sub": res1_row["sub"],
+                            "ses": res1_row["ses"],
+                            "file_path_1": res1_row["file_path"],
+                            "file_path_2": res2_row["file_path"],
+                            "file_name": file_name,
+                            "plots_dir": overlay_dir,
+                            "plot_path": plot_path
+                        })
         else:
             file_name = gen_filename(res1_row)
             if file_name not in seen:
@@ -154,6 +165,8 @@ def parse_bids(base_dir, sub=None, workers=8, logger=None):
 def run_wrapper(args):
     return run(*args)
 
+
+
 def make_pdf(qc_dir, pdf):
     print(Fore.YELLOW + "Generating PDF report..." + Style.RESET_ALL)
 
@@ -178,15 +191,24 @@ def make_pdf(qc_dir, pdf):
     logo_img = ImageReader(logo_path)
     logo_width = 150  # Adjust the logo width
     logo_height = 150  # Adjust the logo height
+
+    # Title at the top
+    c.setFont("Helvetica", 30)
+    c.drawCentredString(width / 2, height - 100, "CPAC Quality Control Report")
+
+    # Logo in the middle
     c.drawImage(logo_img, (width - logo_width) / 2, (height - logo_height) / 2, width=logo_width, height=logo_height)
-    c.setFont("Helvetica", 20)
-    c.drawString(70, height - 130, "CPAC Quality Control Report")
+
+    # Footer information
     c.setFont("Helvetica", 12)
+    c.drawCentredString(width / 2, 100, f"Created on: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    c.drawCentredString(width / 2, 80, "@CPAC developers")
 
     # Add an initial page to skip the first page
     c.showPage()
 
     y_position = height - 30  # Start at the top of the new page
+    page_number = 1  # Initialize page number
 
     # Get unique subjects and sort them in ascending order
     subjects = sorted(set(csv_data['sub']))
@@ -201,7 +223,7 @@ def make_pdf(qc_dir, pdf):
                 if os.path.exists(image_path):
                     img = ImageReader(image_path)
                     max_img_width = width - 20  # Adjust the max width to fit the page
-                    max_img_height = height / 2  # Adjust the max height to fit the page
+                    max_img_height = height - 100  # Adjust the max height to fit the page
 
                     # Preserve aspect ratio
                     img_width, img_height = img.getSize()
@@ -214,36 +236,58 @@ def make_pdf(qc_dir, pdf):
                         img_width = img_height * aspect_ratio
 
                     # Check if the image fits on the current page, otherwise add a new page
-                    if y_position - img_height - 80 < 0:  # Adjusted to account for additional text and white space
+                    if y_position - img_height - 100 < 0:  # Adjusted to account for additional text and white space
+                        c.drawRightString(width - 30, 20, str(page_number))  # Add page number
                         c.showPage()
+                        page_number += 1  # Increment page number
                         y_position = height - 30  # Reset y_position for the new page
 
                     # Add the image to the PDF
                     c.drawImage(img, (width - img_width) / 2, y_position - img_height, width=img_width, height=img_height)
-                    c.setFont("Helvetica", 10)  # Use smaller font for the file name
+                    
+                    # Use Paragraph to wrap the label text
                     label = f"{image_data['file_name']}"
-                    c.drawString(10, y_position - img_height - 10, label)
+                    styles = getSampleStyleSheet()
+                    styles['Normal'].textColor = colors.whitesmoke
+                    wrapped_label = Paragraph(label, styles['Normal'])
+                    wrapped_label.wrapOn(c, width - 20, height)
 
                     # Add file information under the image label
                     file_info = json.loads(image_data['file_info'])
                     file_info_text = [
-                        f"Orientation: {file_info['orientation']}",
-                        f"Dimensions: {file_info['dimension']}",
-                        f"Resolution: {[round(res, 2) for res in file_info['resolution']]}"
+                        ["Image:", wrapped_label],
+                        ["Orientation:", file_info['orientation']],
+                        ["Dimensions:", " x ".join(map(str, file_info['dimension']))],
+                        ["Resolution:", " x ".join(map(lambda x: str(round(x, 2)), file_info['resolution']))]
                     ]
 
                     if file_info['tr'] is not None:
-                        file_info_text.append(f"TR: {file_info['tr']}")
+                        file_info_text.append(["TR:", str(round(file_info['tr'], 2))])
 
                     if file_info['nos_tr'] is not None:
-                        file_info_text.append(f"No of TRs: {file_info['nos_tr']}")
+                        file_info_text.append(["No of TRs:", str(file_info['nos_tr'])])
 
-                    c.setFont("Helvetica", 8)  # Use smaller font for the file info
-                    for i, line in enumerate(file_info_text):
-                        c.drawString(10, y_position - img_height - 25 - (i * 10), line)
+                    table = Table(file_info_text, colWidths=[80, width - 100])
+                    table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, 0), (-1, 0), colors.darkgreen),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('FONTSIZE', (0, 0), (-1, -1), 10),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                        ('BACKGROUND', (0, 1), (-1, -1), colors.lightgrey),
+                        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+                        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                    ]))
+                    table.wrapOn(c, width - 20, height)
+                    table_height = table.wrap(width - 20, height)[1]
+                    table.drawOn(c, 10, y_position - img_height - table_height - 3)
 
                     # Move to the next row after each image
-                    y_position -= img_height + 80  # Adjusted to account for additional text and white space
+                    y_position -= img_height  + table_height + 30  # Adjusted to account for additional text and white space
+
+    # Add the final page number
+    c.drawRightString(width - 30, 20, str(page_number))
 
     # Save the PDF
     c.save()
