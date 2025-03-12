@@ -13,15 +13,11 @@ import os
 import json
 
 
-def make_pdf(qc_dir, pdf):
+def make_pdf(csv_data, qc_dir, sub_ses):
     print(Fore.YELLOW + "Generating PDF report..." + Style.RESET_ALL)
 
-    # Read the CSV file
-    csv_data = pd.read_csv(os.path.join(qc_dir, "results.csv"))
-
     # Handle .pdf in pdf_name
-    if not pdf.endswith(".pdf"):
-        pdf += ".pdf"
+    pdf = f"{sub_ses}_qc_report.pdf"
 
     # Determine if pdf is a full path or just a file name
     if os.path.isabs(pdf):
@@ -40,15 +36,17 @@ def make_pdf(qc_dir, pdf):
 
     # Title at the top
     c.setFont("Helvetica", 30)
-    c.drawCentredString(width / 2, height - 100, "CPAC Quality Control Report")
+    c.drawCentredString(width / 2, height - 100, f"{sub_ses}")
 
     # Logo in the middle
     c.drawImage(logo_img, (width - logo_width) / 2, (height - logo_height) / 2, width=logo_width, height=logo_height)
+    c.setFont("Helvetica", 10)
+    c.drawCentredString(width / 2, height - 80, "Quality Control Report")
 
     # Footer information
     c.setFont("Helvetica", 12)
     c.drawCentredString(width / 2, 100, f"Created on: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    c.drawCentredString(width / 2, 80, "@CPAC developers")
+    c.drawCentredString(width / 2, 80, "CPAC developers")
 
     # Add an initial page to skip the first page
     c.showPage()

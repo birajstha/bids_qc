@@ -82,6 +82,16 @@ def is_3d_or_4d(file_path):
         return False
     return True
 
+def get_scan(row):
+    task = row["task"] if row["task"]  else False
+    run = int(row["run"]) if row["run"]  else False
+    return f"task-{task}_run-{run}" if task and run else ""
+
+def get_sub_ses(row):
+    sub = row["sub"]
+    ses = row["ses"] if row["ses"] != "" else False
+    return f"sub-{sub}_ses-{ses}" if ses else f"sub-{sub}"
+
 def gen_filename(res1_row, res2_row=None):
     scan = f"task-{res1_row['task']}_run-{int(res1_row['run'])}_" if res1_row['task'] and res1_row['run'] else ""
     if res2_row is not None:

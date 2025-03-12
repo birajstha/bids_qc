@@ -16,60 +16,79 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8, pdf=False):
     logger.info(f"Running QC with nprocs {n_procs}...")
     
     # Create necessary directories
-    for directory in ["plots", "overlays"]:
+    for directory in ["plots", "overlays", "csv"]:
         os.makedirs(os.path.join(qc_dir, directory), exist_ok=True)
     
     plots_dir = os.path.join(qc_dir, "plots")
     overlay_dir = os.path.join(qc_dir, "overlays")
+    csv_dir = os.path.join(qc_dir, "csv")
 
     if sub and isinstance(sub, str):
         sub = [sub]
 
     df = parse_bids(bids_dir, sub=sub, workers=n_procs)
+    
     nii_gz_files = preprocess(df)
 
-    if config:
-        overlay_df = pd.read_csv(config).fillna(False)
-        results = overlay_df.apply(lambda row: process_row(row, nii_gz_files, overlay_dir, plots_dir), axis=1).tolist()
-        results = [item for sublist in results for item in sublist]  # Flatten the list of lists
-        result_df = pd.DataFrame(results)
-    else:
-        result_df = nii_gz_files.copy()
-        result_df['file_path_1'] = nii_gz_files['file_path']
-        result_df['file_path_2'] = None
-        result_df['file_name'] = result_df.apply(lambda row: gen_filename(res1_row=row), axis=1)
-        result_df['plots_dir'] = plots_dir
-        result_df['plot_path'] = result_df.apply(lambda row: generate_plot_path(create_directory(row['sub'], row['ses'], row['plots_dir']), row['file_name']), axis=1)
-        result_df = result_df[['sub', 'ses', 'file_path_1', 'file_path_2', 'file_name', 'plots_dir', 'plot_path', 'datatype', 'resource_name', 'space']].copy()
+    # split the df into different df based on unique sub_ses
+    sub_ses = nii_gz_files["sub_ses"].unique()
+    no_sub_ses = len(sub_ses)
+    if no_sub_ses == 0:
+        logger.error("No subjects found.")
+        print(Fore.RED + "No subjects found." + Style.RESET_ALL)
+        return
 
-    result_df['relative_path'] = result_df.apply(lambda row: os.path.relpath(row['plot_path'], qc_dir), axis=1)
-    result_df['file_info'] = result_df.apply(lambda row: get_file_info(row['file_path_1']), axis=1)
-    
-    result_df_csv_path = os.path.join(qc_dir, "results.csv")
-    result_df.to_csv(result_df_csv_path, mode='a' if os.path.exists(result_df_csv_path) else 'w', header=not os.path.exists(result_df_csv_path), index=False)
-    
-    args = [
-        (
-            row['sub'], 
-            row['ses'],  
-            row['file_path_1'],
-            row['file_path_2'], 
-            row['file_name'],
-            row['plots_dir'],
-            row['plot_path'],
-        ) 
-        for _, row in result_df.iterrows()
-    ]
+    not_plotted = []
+    # different df for each sub_ses
+    for index, sub_ses in enumerate(sub_ses):
+        index = index + 1
+        sub_df = nii_gz_files[nii_gz_files["sub_ses"] == sub_ses]
 
-    not_plotted = run_multiprocessing(run_wrapper, args, n_procs)
+        print(Fore.YELLOW + f"Processing {sub_ses} ({index}/{no_sub_ses})..." + Style.RESET_ALL)
+        logger.info(f"Processing {sub_ses} ({index}/{no_sub_ses})...")
+
+        if config:
+            overlay_df = pd.read_csv(config).fillna(False)
+            results = overlay_df.apply(lambda row: process_row(row, sub_df, overlay_dir, plots_dir), axis=1).tolist()
+            results = [item for sublist in results for item in sublist]  # Flatten the list of lists
+            result_df = pd.DataFrame(results)
+        else:
+            result_df = sub_df.copy()
+            result_df['file_path_1'] = sub_df['file_path']
+            result_df['file_path_2'] = None
+            result_df['file_name'] = result_df.apply(lambda row: gen_filename(res1_row=row), axis=1)
+            result_df['plots_dir'] = plots_dir
+            result_df['plot_path'] = result_df.apply(lambda row: generate_plot_path(create_directory(row['sub'], row['ses'], row['plots_dir']), row['file_name']), axis=1)
+            result_df = result_df[['sub', 'ses', 'file_path_1', 'file_path_2', 'file_name', 'plots_dir', 'plot_path', 'datatype', 'resource_name', 'space']].copy()
+
+        result_df['relative_path'] = result_df.apply(lambda row: os.path.relpath(row['plot_path'], qc_dir), axis=1)
+        result_df['file_info'] = result_df.apply(lambda row: get_file_info(row['file_path_1']), axis=1)
+        
+        result_df_csv_path = os.path.join(csv_dir, f"{sub_ses}_results.csv")
+        result_df.to_csv(result_df_csv_path, mode='a' if os.path.exists(result_df_csv_path) else 'w', header=not os.path.exists(result_df_csv_path), index=False)
     
-    if pdf:
-        try:
-            make_pdf(qc_dir, pdf)
-        except Exception as e:
-            logger.error(f"Error generating PDF: {e}")
-            print(Fore.RED + f"Error generating PDF: {e}" + Style.RESET_ALL)
-    
+        args = [
+            (
+                row['sub'], 
+                row['ses'],  
+                row['file_path_1'],
+                row['file_path_2'], 
+                row['file_name'],
+                row['plots_dir'],
+                row['plot_path'],
+            ) 
+            for _, row in result_df.iterrows()
+        ]
+
+        not_plotted += run_multiprocessing(run_wrapper, args, n_procs)
+
+        if pdf:
+            try:
+                make_pdf(result_df, qc_dir, sub_ses)
+            except Exception as e:
+                logger.error(f"Error generating PDF: {e}")
+                print(Fore.RED + f"Error generating PDF: {e}" + Style.RESET_ALL)
+
     return not_plotted
     
 if __name__ == "__main__":
