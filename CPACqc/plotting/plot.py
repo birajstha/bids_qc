@@ -8,6 +8,8 @@ from nilearn.plotting import plot_stat_map
 import matplotlib.pyplot as plt
 import numpy as np
 
+from CPACqc.logging.log import logger
+
 def plot_nii_overlay(in_nii, plot_loc, background=None, volume=None, cmap='viridis', title=None, alpha=0.8, threshold=20):
     im = nib.load(in_nii)
     if volume is not None:
@@ -33,7 +35,7 @@ def plot_nii_overlay(in_nii, plot_loc, background=None, volume=None, cmap='virid
                       black_bg=True, threshold=lb, title=title, cmap=cmap, alpha=float(alpha))
 
 
-def run(sub, ses, file_path_1, file_path_2, file_name, plots_dir, plot_path, logger):
+def run(sub, ses, file_path_1, file_path_2, file_name, plots_dir, plot_path):
     # # check if the above files exist
     # if not os.path.exists(file_path_1):
     #     print(Fore.RED + f"NO FILE: {file_name}" + Style.RESET_ALL)

@@ -1,103 +1,37 @@
 import pandas as pd
 import os
-from concurrent.futures import ProcessPoolExecutor, as_completed
-from tqdm import tqdm
+import pandas as pd
+import os
+import argparse
 
-import nibabel as nib
-from colorama import Fore, Style, init
-import logging
-
-from CPACqc.utils import *
-from CPACqc.plot import run
-from CPACqc.bids2table._b2t import bids2table
-
-def setup_logger(qc_dir):
-    # setup logger
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
-
-    # Create a file handler
-    log_file = os.path.join(qc_dir, 'qc.log')
-    file_handler = logging.FileHandler(log_file)
-    file_handler.setLevel(logging.INFO)
-
-    # Create a logging format
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    file_handler.setFormatter(formatter)
-
-    # Add the handlers to the logger
-    logger.addHandler(file_handler)
-    
-    return logger
+from CPACqc.table.table import preprocess
+from CPACqc.table.utils import *
+from CPACqc.multiprocessing.multiprocessing_utils import run_multiprocessing
+from CPACqc.report.pdf import make_pdf
+from CPACqc.logging.log import logger
 
 def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8, pdf=False):
     os.makedirs(qc_dir, exist_ok=True)
-    logger = setup_logger(qc_dir)
     
     logger.info(f"Running QC with nprocs {n_procs}...")
     
-    csv_file = os.path.join(qc_dir, "df.csv")
-
-    plots_dir = os.path.join(qc_dir, "plots")
-    os.makedirs(plots_dir, exist_ok=True)
-
-    overlay_dir = os.path.join(qc_dir, "overlays")
-    os.makedirs(overlay_dir, exist_ok=True)
-
-    if sub:
-        if isinstance(sub, str):
-            sub = [sub]
-
-    df = parse_bids(bids_dir, sub=sub, workers=n_procs, logger=logger)
-
+    # Create necessary directories
+    for directory in ["plots", "overlays"]:
+        os.makedirs(os.path.join(qc_dir, directory), exist_ok=True)
     
-    for col in df.columns:
-        if isinstance(df[col].iloc[0], dict):
-            df[col] = df[col].apply(lambda x: str(x) if x else "")
-            if df[col].nunique() == 1 and df[col].iloc[0] == "":
-                df = df.drop(columns=[col])
-                
-    # give me all columns that have more than one unique value and drop other columns
-    # non_single_value_columns = df.columns[df.nunique() > 1].tolist()
-    # df = df[non_single_value_columns]
+    plots_dir = os.path.join(qc_dir, "plots")
+    overlay_dir = os.path.join(qc_dir, "overlays")
 
-    # fill all columns with NaN with empty string
-    df = df.fillna("")
+    if sub and isinstance(sub, str):
+        sub = [sub]
 
-    # drop json column too
-    df = df.drop(columns=["json"])
+    df = parse_bids(bids_dir, sub=sub, workers=n_procs)
+    nii_gz_files = preprocess(df)
 
-    # give me all whose ext is nii.gz
-    nii_gz_files = df[df.file_path.str.endswith(".nii.gz")].copy()
-
-    # add one column that breaks the file_path to the last name of the file and drops extension
-    nii_gz_files.loc[:, "file_name"] = nii_gz_files.file_path.apply(lambda x: os.path.basename(x).replace(".nii.gz", ""))
-
-    nii_gz_files.loc[:, "resource_name"] = nii_gz_files.apply(gen_resource_name, axis=1)
-
-    nii_gz_files = nii_gz_files[nii_gz_files.file_path.apply(lambda x: is_3d_or_4d(x, logger))]
-
-    def fill_space(row):
-        if row["space"] == "":
-            if row["datatype"] == "anat":
-                return "T1w"
-            elif row["datatype"] == "func":
-                return "bold"
-        return row["space"]
-
-    # check if the space column is empty and if empty fill it with T1w if the datatype is anat or with bold if datatype is func, if not empty leave it
-    nii_gz_files.loc[:, "space"] = nii_gz_files.apply(lambda x: fill_space(x), axis=1)
-
-    # for rows in overlay_csv find the resource_name and get the rows
     if config:
-        overlay_df = pd.read_csv(config)
-        overlay_df = overlay_df.fillna(False)
-        results = overlay_df.apply(lambda row: process_row(row, nii_gz_files, overlay_dir, plots_dir, logger), axis=1).tolist()
-
-        # Flatten the list of lists
-        results = [item for sublist in results for item in sublist]
-
-        # Create a DataFrame from the results
+        overlay_df = pd.read_csv(config).fillna(False)
+        results = overlay_df.apply(lambda row: process_row(row, nii_gz_files, overlay_dir, plots_dir), axis=1).tolist()
+        results = [item for sublist in results for item in sublist]  # Flatten the list of lists
         result_df = pd.DataFrame(results)
     else:
         result_df = nii_gz_files.copy()
@@ -106,19 +40,13 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8, pdf=False):
         result_df['file_name'] = result_df.apply(lambda row: gen_filename(res1_row=row), axis=1)
         result_df['plots_dir'] = plots_dir
         result_df['plot_path'] = result_df.apply(lambda row: generate_plot_path(create_directory(row['sub'], row['ses'], row['plots_dir']), row['file_name']), axis=1)
-        
-        columns_to_keep = ['sub', 'ses', 'file_path_1', 'file_path_2', 'file_name', 'plots_dir', 'plot_path']
-        result_df = result_df[columns_to_keep].copy()
+        result_df = result_df[['sub', 'ses', 'file_path_1', 'file_path_2', 'file_name', 'plots_dir', 'plot_path', 'datatype', 'resource_name', 'space']].copy()
 
     result_df['relative_path'] = result_df.apply(lambda row: os.path.relpath(row['plot_path'], qc_dir), axis=1)
     result_df['file_info'] = result_df.apply(lambda row: get_file_info(row['file_path_1']), axis=1)
     
-    # save the result_df to csv
     result_df_csv_path = os.path.join(qc_dir, "results.csv")
-    if os.path.exists(result_df_csv_path):
-        result_df.to_csv(result_df_csv_path, mode='a', header=False, index=False)
-    else:
-        result_df.to_csv(result_df_csv_path, index=False)
+    result_df.to_csv(result_df_csv_path, mode='a' if os.path.exists(result_df_csv_path) else 'w', header=not os.path.exists(result_df_csv_path), index=False)
     
     args = [
         (
@@ -129,23 +57,12 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8, pdf=False):
             row['file_name'],
             row['plots_dir'],
             row['plot_path'],
-            logger
         ) 
         for _, row in result_df.iterrows()
     ]
 
-    not_plotted = []
-    # Use concurrent.futures to process each row with the specified number of processes
-    with ProcessPoolExecutor(max_workers=n_procs) as executor:
-        futures = {executor.submit(run_wrapper, arg): arg for arg in args}
-        for future in tqdm(as_completed(futures), total=len(futures), desc="Processing ..."):
-            try:
-                future.result()
-            except Exception as e:
-                if "terminated abruptly" in str(e):
-                    print(Fore.RED + f"Error processing {futures[future]}: {e}\n Try with lower number of processes" + Style.RESET_ALL)
-                logger.error(f"Error processing {futures[future]}: {e}, Try with a lower number of processes")
-                not_plotted.append(futures[future])
+    not_plotted = run_multiprocessing(run_wrapper, args, n_procs)
+    
     if pdf:
         try:
             make_pdf(qc_dir, pdf)
