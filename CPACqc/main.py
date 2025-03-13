@@ -59,7 +59,7 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8, pdf=False):
             result_df['file_name'] = result_df.apply(lambda row: gen_filename(res1_row=row), axis=1)
             result_df['plots_dir'] = plots_dir
             result_df['plot_path'] = result_df.apply(lambda row: generate_plot_path(create_directory(row['sub'], row['ses'], row['plots_dir']), row['file_name']), axis=1)
-            result_df = result_df[['sub', 'ses', 'file_path_1', 'file_path_2', 'file_name', 'plots_dir', 'plot_path', 'datatype', 'resource_name', 'space']].copy()
+            result_df = result_df[['sub', 'ses', 'file_path_1', 'file_path_2', 'file_name', 'plots_dir', 'plot_path', 'datatype', 'resource_name', 'space', 'scan']].copy()
 
         result_df['relative_path'] = result_df.apply(lambda row: os.path.relpath(row['plot_path'], qc_dir), axis=1)
         result_df['file_info'] = result_df.apply(lambda row: get_file_info(row['file_path_1']), axis=1)

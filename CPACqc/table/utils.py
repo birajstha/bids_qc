@@ -172,7 +172,8 @@ def create_result_row(res1_row, res2_row, file_name, plots_dir, plot_path):
         "plot_path": plot_path,
         "datatype": res1_row["datatype"],
         "resource_name": res1_row["resource_name"],
-        "space": res1_row["space"]
+        "space": res1_row["space"],
+        "scan": res1_row["scan"]
     }
 
 def parse_bids(base_dir, sub=None, workers=8):
