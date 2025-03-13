@@ -5,6 +5,7 @@ from colorama import Fore, Style
 import pkg_resources
 from CPACqc import __version__  # Import the version number
 import argparse
+import pandas as pd
 
 class StoreTrueOrString(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
@@ -48,6 +49,7 @@ def run():
         if args.html:
             # Locate the templates directory within the package
             templates_dir = pkg_resources.resource_filename('CPACqc', 'templates')
+
             # Copy only the index.html file from the templates directory to the QC output directory
             src_file = os.path.join(templates_dir, 'index.html')
             dest_file = os.path.join(args.qc_dir, 'index.html')
@@ -65,6 +67,17 @@ def run():
         print(Style.RESET_ALL)
         shutil.rmtree(args.qc_dir)
     else:
+        # combine all the csvs inside qc_dir/csv into one csv and name it results.csv
+        csv_dir = os.path.join(args.qc_dir, 'csv')
+        if os.path.exists(csv_dir):
+            # Combine all the csv files into one
+            combined_csv = os.path.join(args.qc_dir, 'results.csv')
+            combined_df = pd.concat([pd.read_csv(os.path.join(csv_dir, f)) for f in os.listdir(csv_dir) if f.endswith('.csv')])
+            combined_df.to_csv(combined_csv, index=False)
+        else:
+            print(Fore.RED + "No CSV files found in the QC output directory. Please check the log for details.")
+            print(Style.RESET_ALL)
+            return
         # Rename the qc_dir to results
         new_qc_dir = os.path.join(os.getcwd(), 'results')
         print(Fore.YELLOW + f"Creating HTML report in results dir: {new_qc_dir}")

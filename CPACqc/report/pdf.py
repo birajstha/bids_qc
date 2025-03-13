@@ -11,7 +11,7 @@ from colorama import Fore, Style
 import pandas as pd
 import os
 import json
-# ...existing code...
+
 
 def make_pdf(df, qc_dir, sub_ses):
     print(Fore.YELLOW + "Generating PDF report..." + Style.RESET_ALL)
