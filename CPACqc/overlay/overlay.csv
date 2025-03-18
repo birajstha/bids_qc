@@ -1,4 +1,4 @@
-image_1,image_2
+output,underlay
 label-WM_desc-preproc_mask,desc-preproc_T1w
 label-GM_desc-preproc_mask,desc-preproc_T1w
 label-CSF_desc-preproc_mask,desc-preproc_T1w

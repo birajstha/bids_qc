@@ -52,6 +52,16 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8, pdf=False):
             results = overlay_df.apply(lambda row: process_row(row, sub_df, overlay_dir, plots_dir), axis=1).tolist()
             results = [item for sublist in results for item in sublist]  # Flatten the list of lists
             result_df = pd.DataFrame(results)
+            # add missing rows to result_df from sub_df look for file_path in sub_df and file_path_1 in result_df
+            missing_rows = sub_df.loc[~sub_df['file_path'].isin(result_df['file_path_1'])].copy()
+            missing_rows['file_path_1'] = missing_rows['file_path']
+            missing_rows['file_path_2'] = None
+            missing_rows['file_name'] = missing_rows.apply(lambda row: gen_filename(res1_row=row), axis=1)
+            missing_rows['plots_dir'] = plots_dir
+            missing_rows['plot_path'] = missing_rows.apply(lambda row: generate_plot_path(create_directory(row['sub'], row['ses'], row['plots_dir']), row['file_name']), axis=1)
+            missing_rows = missing_rows[['sub', 'ses', 'file_path_1', 'file_path_2', 'file_name', 'plots_dir', 'plot_path', 'datatype', 'resource_name', 'space', 'scan']].copy()
+            result_df = pd.concat([result_df, missing_rows], ignore_index=True)
+        # if config is not provided, use the default config
         else:
             result_df = sub_df.copy()
             result_df['file_path_1'] = sub_df['file_path']
@@ -84,7 +94,7 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8, pdf=False):
 
         if pdf:
             try:
-                make_pdf(result_df, qc_dir, sub_ses)
+                make_pdf(result_df, qc_dir, sub_ses, overlay_df=overlay_df if config else None)
             except Exception as e:
                 logger.error(f"Error generating PDF: {e}")
                 print(Fore.RED + f"Error generating PDF: {e}" + Style.RESET_ALL)

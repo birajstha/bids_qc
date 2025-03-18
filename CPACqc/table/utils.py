@@ -108,8 +108,8 @@ def generate_plot_path(sub_dir, file_name):
     return os.path.join(sub_dir, f"{file_name}.png")
 
 def process_row(row, nii_gz_files, overlay_dir, plots_dir):
-    image_1 = row.get("image_1", False)
-    image_2 = row.get("image_2", False)
+    image_1 = row.get("output", False)
+    image_2 = row.get("underlay", False)
 
     resource_name_1 = get_rows_by_resource_name(image_1, nii_gz_files) if image_1 else None
     resource_name_2 = get_rows_by_resource_name(image_2, nii_gz_files) if image_2 else None

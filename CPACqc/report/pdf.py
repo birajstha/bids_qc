@@ -1,195 +1,235 @@
 from CPACqc.report.utils import *
-
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 from reportlab.platypus import Paragraph, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
-
 from colorama import Fore, Style
 import pandas as pd
 import os
 import json
 
+class Report:
+    def __init__(self, df, qc_dir, sub_ses, overlay_df=None):
+        self.df = df
+        self.qc_dir = qc_dir
+        self.sub_ses = sub_ses
+        self.overlay_df = overlay_df
+        self.pdf_path = self.get_pdf_path()
+        self.canvas = canvas.Canvas(self.pdf_path, pagesize=letter)
+        self.width, self.height = letter
+        self.styles = getSampleStyleSheet()
 
-def make_pdf(df, qc_dir, sub_ses):
-    print(Fore.YELLOW + "Generating PDF report..." + Style.RESET_ALL)
+    def get_pdf_path(self):
+        pdf = f"{self.sub_ses}_qc_report.pdf"
+        if os.path.isabs(pdf):
+            return pdf
+        else:
+            return os.path.join(os.getcwd(), pdf)
 
-    # Handle .pdf in pdf_name
-    pdf = f"{sub_ses}_qc_report.pdf"
+    def add_front_page(self):
+        logo_path = 'https://avatars.githubusercontent.com/u/2230402?s=200&v=4'
+        logo_img = ImageReader(logo_path)
+        logo_width = 150
+        logo_height = 150
 
-    # Determine if pdf is a full path or just a file name
-    if os.path.isabs(pdf):
-        pdf_path = pdf
-    else:
-        pdf_path = os.path.join(os.getcwd(), pdf)
+        self.canvas.setFont("Helvetica", 25)
+        title = Paragraph(f"{self.sub_ses.replace('_', ' ')}", self.styles['Title'])
+        title.wrapOn(self.canvas, self.width - 40, self.height)
+        title.drawOn(self.canvas, 20, self.height - 100)
 
-    c = canvas.Canvas(pdf_path, pagesize=letter)
-    width, height = letter
+        self.canvas.drawImage(logo_img, (self.width - logo_width) / 2, (self.height - logo_height) / 2, width=logo_width, height=logo_height)
+        self.canvas.setFont("Helvetica", 15)
+        self.canvas.drawCentredString(self.width / 2, self.height - 120, "Quality Control Report")
 
-    # Add CPAC logo and description to the front page
-    logo_path = 'https://avatars.githubusercontent.com/u/2230402?s=200&v=4'  # Adjust the path as needed
-    logo_img = ImageReader(logo_path)
-    logo_width = 150  # Adjust the logo width
-    logo_height = 150  # Adjust the logo height
+        self.canvas.setFont("Helvetica", 12)
+        self.canvas.drawCentredString(self.width / 2, 100, f"Created on: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        self.canvas.drawCentredString(self.width / 2, 80, "CPAC developers")
 
-    # Title at the top
-    c.setFont("Helvetica", 30)
-    c.drawCentredString(width / 2, height - 100, f"{sub_ses}")
+        self.canvas.showPage()
 
-    # Logo in the middle
-    c.drawImage(logo_img, (width - logo_width) / 2, (height - logo_height) / 2, width=logo_width, height=logo_height)
-    c.setFont("Helvetica", 15)
-    c.drawCentredString(width / 2, height - 120, "Quality Control Report")
+    def add_contents_page(self):
+        self.canvas.setFont("Helvetica", 20)
+        self.canvas.drawCentredString(self.width / 2, self.height - 100, "Contents")
+        self.canvas.setFont("Helvetica", 12)
+        y_position = self.height - 150
+        chapters = sorted(set(self.df['datatype'].dropna()))
 
-    # Footer information
-    c.setFont("Helvetica", 12)
-    c.drawCentredString(width / 2, 100, f"Created on: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    c.drawCentredString(width / 2, 80, "CPAC developers")
-
-    # Add an initial page to skip the first page
-    c.showPage()
-
-    # Contents page
-    c.setFont("Helvetica", 20)
-    c.drawCentredString(width / 2, height - 100, "Contents")
-    c.setFont("Helvetica", 12)
-    y_position = height - 150
-    contents = []
-
-    # Get unique chapters and sort them in ascending order
-    chapters = sorted(set(df['datatype'].dropna()))
-
-    for chapter in chapters:
-        contents.append(f"{chapter}")
-        y_position -= 20
-        c.setFillColor(colors.blue)
-        c.drawString(100, y_position, f"{chapter}")
-        c.linkRect("", f"chapter_{chapter}", (100, y_position - 2, 200, y_position + 10), color=colors.blue)
-        y_position -= 10
-
-        # List subsections under each chapter if they exist
-        chapter_data = df[df['datatype'] == chapter]
-        scans = sorted(set(chapter_data['scan'].dropna()))
-        for scan in scans:
-            c.setFillColor(colors.green)
-            c.drawString(120, y_position, f"{scan}")
-            c.linkRect("", f"subsection_{chapter}_{scan}", (120, y_position - 2, 220, y_position + 10), color=colors.green)
+        for chapter in chapters:
+            if y_position < 50:
+                self.canvas.showPage()
+                y_position = self.height - 50
             y_position -= 20
+            self.canvas.setFillColor(colors.blue)
+            self.canvas.drawString(100, y_position, f"{chapter}")
+            self.canvas.linkRect("", f"chapter_{chapter}", (100, y_position - 2, 200, y_position + 10), color=colors.blue)
+            y_position -= 10
 
-    y_position = height - 30  # Start at the top of the new page
-    page_number = 1  # Initialize page number
+            chapter_data = self.df[self.df['datatype'] == chapter]
+            scans = sorted(set(chapter_data['scan'].dropna()))
+            for scan in scans:
+                if y_position < 50:
+                    self.canvas.showPage()
+                    y_position = self.height - 50
+                self.canvas.setFillColor(colors.green)
+                self.canvas.drawString(120, y_position, f"{scan}")
+                self.canvas.linkRect("", f"subsection_{chapter}_{scan}", (120, y_position - 2, 220, y_position + 10), color=colors.green)
+                y_position -= 10
 
-    # Add all images to the PDF, grouped by chapter and scan
-    for chapter in chapters:
-        # Add a new page for each chapter
-        c.showPage()
-        page_number += 1  # Increment page number
-        y_position = height - 30  # Reset y_position for the new page
+                scan_data = chapter_data[chapter_data['scan'] == scan]
 
-        # Add chapter name to the blank page
-        c.setFont("Helvetica", 30)
-        c.drawCentredString(width / 2, height / 2, chapter)
-        c.bookmarkPage(f"chapter_{chapter}")
+                if not scan_data.empty:
+                    ordered_images = []
+                    extra_images = []
 
-        chapter_data = df[df['datatype'] == chapter]
-        scans = sorted(set(chapter_data['scan'].dropna()))
+                    if self.overlay_df is not None:
+                        ordered_images = scan_data[scan_data['resource_name'].isin(self.overlay_df['output'])]
+                        extra_images = scan_data[~scan_data['resource_name'].isin(self.overlay_df['output'])]
+                    else:
+                        ordered_images = scan_data
 
-        for scan in scans:
-            # Add a new page for each scan
-            c.showPage()
-            page_number += 1  # Increment page number
-            y_position = height - 30  # Reset y_position for the new page
+                    for _, image_data in ordered_images.iterrows():
+                        if y_position < 50:
+                            self.canvas.showPage()
+                            y_position = self.height - 50
+                        self.canvas.setFillColor(colors.black)
+                        self.canvas.drawString(140, y_position, f"{image_data['resource_name']}")
+                        y_position -= 10
 
-            # Add chapter name and subsection string at the top of each page
-            c.setFont("Helvetica", 12)
-            c.drawString(10, height - 30, f"Chapter: {chapter}/{scan}")
-            c.bookmarkPage(f"subsection_{chapter}_{scan}")
+                    for _, image_data in extra_images.iterrows():
+                        if y_position < 50:
+                            self.canvas.showPage()
+                            y_position = self.height - 50
+                        self.canvas.setFillColor(colors.black)
+                        self.canvas.drawString(140, y_position, f"{image_data['resource_name']}")
+                        y_position -= 10
 
-            scan_data = chapter_data[chapter_data['scan'] == scan]
+                y_position -= 10
 
-            if not scan_data.empty:
-                for _, image_data in scan_data.iterrows():
-                    image_path = os.path.join(qc_dir, image_data['relative_path'])
-                    if os.path.exists(image_path):
-                        img = ImageReader(image_path)
-                        max_img_width = width - 20  # Adjust the max width to fit the page
-                        max_img_height = height - 100  # Adjust the max height to fit the page
+    def add_images(self):
+        chapters = sorted(set(self.df['datatype'].dropna()))
 
-                        # Preserve aspect ratio
-                        img_width, img_height = img.getSize()
-                        aspect_ratio = img_width / img_height
-                        if aspect_ratio > 1:
-                            img_width = max_img_width
-                            img_height = img_width / aspect_ratio
-                        else:
-                            img_height = max_img_height
-                            img_width = img_height * aspect_ratio
+        for chapter in chapters:
+            self.canvas.showPage()
+            self.add_chapter_title_page(chapter)
 
-                        # Check if the image fits on the current page, otherwise add a new page
-                        if y_position - img_height - 140 < 0:  # Adjusted to account for additional text and white space
-                            c.drawRightString(width - 30, 20, str(page_number))  # Add page number
-                            c.showPage()
-                            page_number += 1  # Increment page number
-                            y_position = height - 30  # Reset y_position for the new page
+            chapter_data = self.df[self.df['datatype'] == chapter]
+            scans = sorted(set(chapter_data['scan'].dropna()))
 
-                            # Add chapter name and subsection string at the top of each page
-                            c.setFont("Helvetica", 12)
-                            c.drawString(10, height - 30, f"Chapter : {chapter}/{scan}")
-                            c.bookmarkPage(f"subsection_{chapter}_{scan}")
+            for scan in scans:
+                self.canvas.showPage()
+                self.add_scan_title_page(chapter, scan)
 
-                        # Print the image name above each image
-                        c.setFont("Helvetica", 15)
-                        c.drawString(10, y_position - 20, f"{image_data['resource_name']}")
+                scan_data = chapter_data[chapter_data['scan'] == scan]
 
-                        # Add the image to the PDF
-                        c.drawImage(img, (width - img_width) / 2, y_position - img_height - 40, width=img_width, height=img_height)
-                        
-                        # Use Paragraph to wrap the label text
-                        label = f"{image_data['file_name']}"
-                        styles = getSampleStyleSheet()
-                        styles['Normal'].textColor = colors.whitesmoke
-                        wrapped_label = Paragraph(label, styles['Normal'])
-                        wrapped_label.wrapOn(c, width - 20, height)
+                if not scan_data.empty:
+                    ordered_images = []
+                    extra_images = []
 
-                        # Add file information under the image label
-                        file_info = json.loads(image_data['file_info'])
-                        file_info_text = [
-                            ["Image:", wrapped_label],
-                            ["Orientation:", file_info['orientation']],
-                            ["Dimensions:", " x ".join(map(str, file_info['dimension']))],
-                            ["Resolution:", " x ".join(map(lambda x: str(round(x, 2)), file_info['resolution']))]
-                        ]
+                    if self.overlay_df is not None:
+                        ordered_images = scan_data[scan_data['resource_name'].isin(self.overlay_df['output'])]
+                        extra_images = scan_data[~scan_data['resource_name'].isin(self.overlay_df['output'])]
+                    else:
+                        ordered_images = scan_data
 
-                        if file_info['tr'] is not None:
-                            file_info_text.append(["TR:", str(round(file_info['tr'], 2))])
+                    y_position = self.height - 30
+                    page_number = 1
 
-                        if file_info['nos_tr'] is not None:
-                            file_info_text.append(["No of TRs:", str(file_info['nos_tr'])])
+                    for _, image_data in ordered_images.iterrows():
+                        y_position, page_number = self.add_image(image_data, chapter, scan, y_position, page_number)
 
-                        table = Table(file_info_text, colWidths=[80, width - 100])
-                        table.setStyle(TableStyle([
-                            ('BACKGROUND', (0, 0), (-1, 0), colors.darkgreen),
-                            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                            ('FONTSIZE', (0, 0), (-1, -1), 10),
-                            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                            ('BACKGROUND', (0, 1), (-1, -1), colors.lightgrey),
-                            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
-                            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                        ]))
-                        table.wrapOn(c, width - 20, height)
-                        table_height = table.wrap(width - 20, height)[1]
-                        table.drawOn(c, 10, y_position - img_height - table_height - 60)
+                    for _, image_data in extra_images.iterrows():
+                        y_position, page_number = self.add_image(image_data, chapter, scan, y_position, page_number)
 
-                        # Move to the next row after each image
-                        y_position -= img_height  + table_height + 70  # Adjusted to account for additional text and white space
+    def add_chapter_title_page(self, chapter):
+        self.canvas.setFont("Helvetica", 30)
+        self.canvas.drawCentredString(self.width / 2, self.height / 2, chapter)
+        self.canvas.bookmarkPage(f"chapter_{chapter}")
 
-    # Add the final page number
-    c.drawRightString(width - 30, 20, str(page_number))
+    def add_scan_title_page(self, chapter, scan):
+        self.canvas.setFont("Helvetica", 25)
+        self.canvas.drawCentredString(self.width / 2, self.height / 2, f"{chapter} - {scan}")
+        self.canvas.bookmarkPage(f"subsection_{chapter}_{scan}")
 
-    # Save the PDF
-    c.save()
-    print(Fore.GREEN + "PDF report generated successfully." + Style.RESET_ALL)
+    def add_image(self, image_data, chapter, scan, y_position, page_number):
+        image_path = os.path.join(self.qc_dir, image_data['relative_path'])
+        if os.path.exists(image_path):
+            img = ImageReader(image_path)
+            max_img_width = self.width - 20
+            max_img_height = self.height - 100
+
+            img_width, img_height = img.getSize()
+            aspect_ratio = img_width / img_height
+            if aspect_ratio > 1:
+                img_width = max_img_width
+                img_height = img_width / aspect_ratio
+            else:
+                img_height = max_img_height
+                img_width = img_height * aspect_ratio
+
+            if y_position - img_height - 140 < 0:
+                self.canvas.drawRightString(self.width - 30, 20, str(page_number))
+                self.canvas.showPage()
+                page_number += 1
+                y_position = self.height - 30
+
+                self.canvas.setFont("Helvetica", 12)
+                self.canvas.drawString(10, self.height - 30, f"Chapter : {chapter}/{scan}")
+
+            self.canvas.setFont("Helvetica", 15)
+            self.canvas.drawString(10, y_position - 20, f"{image_data['resource_name']}")
+            self.canvas.bookmarkPage(f"image_{chapter}_{scan}_{image_data['resource_name']}")
+
+            self.canvas.drawImage(img, (self.width - img_width) / 2, y_position - img_height - 40, width=img_width, height=img_height)
+
+            label = f"{image_data['file_name']}"
+            self.styles['Normal'].textColor = colors.whitesmoke
+            wrapped_label = Paragraph(label, self.styles['Normal'])
+            wrapped_label.wrapOn(self.canvas, self.width - 20, self.height)
+
+            file_info = json.loads(image_data['file_info'])
+            file_info_text = [
+                ["Image:", wrapped_label],
+                ["Orientation:", file_info['orientation']],
+                ["Dimensions:", " x ".join(map(str, file_info['dimension']))],
+                ["Resolution:", " x ".join(map(lambda x: str(round(x, 2)), file_info['resolution']))]
+            ]
+
+            if file_info['tr'] is not None:
+                file_info_text.append(["TR:", str(round(file_info['tr'], 2))])
+
+            if file_info['nos_tr'] is not None:
+                file_info_text.append(["No of TRs:", str(file_info['nos_tr'])])
+
+            table = Table(file_info_text, colWidths=[80, self.width - 100])
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.darkgreen),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.lightgrey),
+                ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ]))
+            table.wrapOn(self.canvas, self.width - 20, self.height)
+            table_height = table.wrap(self.width - 20, self.height)[1]
+            table.drawOn(self.canvas, 10, y_position - img_height - table_height - 60)
+
+            y_position -= img_height + table_height + 70
+
+        return y_position, page_number
+
+    def generate(self):
+        print(Fore.YELLOW + "Generating PDF report..." + Style.RESET_ALL)
+        self.add_front_page()
+        self.add_contents_page()
+        self.add_images()
+        self.canvas.save()
+        print(Fore.GREEN + "PDF report generated successfully." + Style.RESET_ALL)
+
+def make_pdf(df, qc_dir, sub_ses, overlay_df=None):
+    report = Report(df, qc_dir, sub_ses, overlay_df)
+    report.generate()
