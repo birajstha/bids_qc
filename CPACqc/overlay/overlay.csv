@@ -8,4 +8,3 @@ label-GM_mask,desc-preproc_T1w
 label-CSF_mask,desc-preproc_T1w
 
 desc-preproc_bold,desc-preproc_T1w
-bold,T1w

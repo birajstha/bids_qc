@@ -63,7 +63,8 @@ class Report:
             y_position -= 20
             self.canvas.setFillColor(colors.blue)
             self.canvas.drawString(100, y_position, f"{chapter}")
-            self.canvas.linkRect("", f"chapter_{chapter}", (100, y_position - 2, 200, y_position + 10), color=colors.blue)
+            text_width = self.canvas.stringWidth(chapter, "Helvetica", 12)
+            self.canvas.linkRect("", f"chapter_{chapter}", (100, y_position - 2, 100 + text_width, y_position + 10), color=colors.blue)
             y_position -= 10
 
             chapter_data = self.df[self.df['datatype'] == chapter]
@@ -74,7 +75,11 @@ class Report:
                     y_position = self.height - 50
                 self.canvas.setFillColor(colors.green)
                 self.canvas.drawString(120, y_position, f"{scan}")
-                self.canvas.linkRect("", f"subsection_{chapter}_{scan}", (120, y_position - 2, 220, y_position + 10), color=colors.green)
+                text_width = self.canvas.stringWidth(scan, "Helvetica", 12)
+                if scan.strip() == '':
+                    self.canvas.linkRect("", f"subsection_{chapter}", (120, y_position - 2, 120 + text_width, y_position + 10), color=colors.green)
+                else:
+                    self.canvas.linkRect("", f"subsection_{chapter}_{scan}", (120, y_position - 2, 120 + text_width, y_position + 10), color=colors.green)
                 y_position -= 10
 
                 scan_data = chapter_data[chapter_data['scan'] == scan]
@@ -95,7 +100,9 @@ class Report:
                             y_position = self.height - 50
                         self.canvas.setFillColor(colors.black)
                         self.canvas.drawString(140, y_position, f"{image_data['resource_name']}")
-                        y_position -= 10
+                        text_width = self.canvas.stringWidth(image_data['resource_name'], "Helvetica", 12)
+                        self.canvas.linkRect("", f"image_{chapter}_{scan}_{image_data['resource_name']}", (140, y_position - 2, 140 + text_width, y_position + 10), color=colors.blue)
+                        y_position -= 13
 
                     for _, image_data in extra_images.iterrows():
                         if y_position < 50:
@@ -103,23 +110,28 @@ class Report:
                             y_position = self.height - 50
                         self.canvas.setFillColor(colors.black)
                         self.canvas.drawString(140, y_position, f"{image_data['resource_name']}")
-                        y_position -= 10
+                        text_width = self.canvas.stringWidth(image_data['resource_name'], "Helvetica", 12)
+                        self.canvas.linkRect("", f"image_{chapter}_{scan}_{image_data['resource_name']}", (140, y_position - 2, 140 + text_width, y_position + 10), color=colors.blue)
+                        y_position -= 13
 
                 y_position -= 10
+        self.canvas.showPage()
 
     def add_images(self):
         chapters = sorted(set(self.df['datatype'].dropna()))
+        page_number = 1  
 
         for chapter in chapters:
-            self.canvas.showPage()
             self.add_chapter_title_page(chapter)
+            page_number += 1
 
             chapter_data = self.df[self.df['datatype'] == chapter]
             scans = sorted(set(chapter_data['scan'].dropna()))
 
             for scan in scans:
-                self.canvas.showPage()
+
                 self.add_scan_title_page(chapter, scan)
+                page_number += 1
 
                 scan_data = chapter_data[chapter_data['scan'] == scan]
 
@@ -134,7 +146,6 @@ class Report:
                         ordered_images = scan_data
 
                     y_position = self.height - 30
-                    page_number = 1
 
                     for _, image_data in ordered_images.iterrows():
                         y_position, page_number = self.add_image(image_data, chapter, scan, y_position, page_number)
@@ -146,11 +157,17 @@ class Report:
         self.canvas.setFont("Helvetica", 30)
         self.canvas.drawCentredString(self.width / 2, self.height / 2, chapter)
         self.canvas.bookmarkPage(f"chapter_{chapter}")
+        self.canvas.showPage()
 
     def add_scan_title_page(self, chapter, scan):
+        if scan.strip() == '':
+            print(Fore.YELLOW + f"Scan name is empty for chapter {chapter}. Skipping..." + Style.RESET_ALL)
+            self.canvas.bookmarkPage(f"subsection_{chapter}")
+            return
         self.canvas.setFont("Helvetica", 25)
         self.canvas.drawCentredString(self.width / 2, self.height / 2, f"{chapter} - {scan}")
         self.canvas.bookmarkPage(f"subsection_{chapter}_{scan}")
+        self.canvas.showPage()
 
     def add_image(self, image_data, chapter, scan, y_position, page_number):
         image_path = os.path.join(self.qc_dir, image_data['relative_path'])
@@ -169,13 +186,10 @@ class Report:
                 img_width = img_height * aspect_ratio
 
             if y_position - img_height - 140 < 0:
-                self.canvas.drawRightString(self.width - 30, 20, str(page_number))
-                self.canvas.showPage()
+                self.add_footer(page_number)
                 page_number += 1
                 y_position = self.height - 30
-
-                self.canvas.setFont("Helvetica", 12)
-                self.canvas.drawString(10, self.height - 30, f"Chapter : {chapter}/{scan}")
+                self.add_header(chapter, scan)
 
             self.canvas.setFont("Helvetica", 15)
             self.canvas.drawString(10, y_position - 20, f"{image_data['resource_name']}")
@@ -219,8 +233,16 @@ class Report:
             table.drawOn(self.canvas, 10, y_position - img_height - table_height - 60)
 
             y_position -= img_height + table_height + 70
-
+            
+            self.canvas.showPage()
         return y_position, page_number
+
+    def add_header(self, chapter, scan):
+        self.canvas.setFont("Helvetica", 12)
+        self.canvas.drawString(10, self.height - 30, f"Chapter : {chapter}/{scan}")
+
+    def add_footer(self, page_number):
+        self.canvas.drawRightString(self.width - 30, 20, str(page_number))
 
     def generate(self):
         print(Fore.YELLOW + "Generating PDF report..." + Style.RESET_ALL)

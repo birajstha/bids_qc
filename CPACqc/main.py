@@ -47,29 +47,28 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8, pdf=False):
         print(Fore.YELLOW + f"Processing {sub_ses} ({index}/{no_sub_ses})..." + Style.RESET_ALL)
         logger.info(f"Processing {sub_ses} ({index}/{no_sub_ses})...")
 
-        if config:
-            overlay_df = pd.read_csv(config).fillna(False)
-            results = overlay_df.apply(lambda row: process_row(row, sub_df, overlay_dir, plots_dir), axis=1).tolist()
-            results = [item for sublist in results for item in sublist]  # Flatten the list of lists
-            result_df = pd.DataFrame(results)
-            # add missing rows to result_df from sub_df look for file_path in sub_df and file_path_1 in result_df
-            missing_rows = sub_df.loc[~sub_df['file_path'].isin(result_df['file_path_1'])].copy()
-            missing_rows['file_path_1'] = missing_rows['file_path']
-            missing_rows['file_path_2'] = None
-            missing_rows['file_name'] = missing_rows.apply(lambda row: gen_filename(res1_row=row), axis=1)
-            missing_rows['plots_dir'] = plots_dir
-            missing_rows['plot_path'] = missing_rows.apply(lambda row: generate_plot_path(create_directory(row['sub'], row['ses'], row['plots_dir']), row['file_name']), axis=1)
-            missing_rows = missing_rows[['sub', 'ses', 'file_path_1', 'file_path_2', 'file_name', 'plots_dir', 'plot_path', 'datatype', 'resource_name', 'space', 'scan']].copy()
-            result_df = pd.concat([result_df, missing_rows], ignore_index=True)
+        overlay_df = pd.read_csv(config).fillna(False)
+        results = overlay_df.apply(lambda row: process_row(row, sub_df, overlay_dir, plots_dir), axis=1).tolist()
+        results = [item for sublist in results for item in sublist]  # Flatten the list of lists
+        result_df = pd.DataFrame(results)
+        # add missing rows to result_df from sub_df look for file_path in sub_df and file_path_1 in result_df
+        missing_rows = sub_df.loc[~sub_df['file_path'].isin(result_df['file_path_1'])].copy()
+        missing_rows['file_path_1'] = missing_rows['file_path']
+        missing_rows['file_path_2'] = None
+        missing_rows['file_name'] = missing_rows.apply(lambda row: gen_filename(res1_row=row), axis=1)
+        missing_rows['plots_dir'] = plots_dir
+        missing_rows['plot_path'] = missing_rows.apply(lambda row: generate_plot_path(create_directory(row['sub'], row['ses'], row['plots_dir']), row['file_name']), axis=1)
+        missing_rows = missing_rows[['sub', 'ses', 'file_path_1', 'file_path_2', 'file_name', 'plots_dir', 'plot_path', 'datatype', 'resource_name', 'space', 'scan']].copy()
+        result_df = pd.concat([result_df, missing_rows], ignore_index=True)
         # if config is not provided, use the default config
-        else:
-            result_df = sub_df.copy()
-            result_df['file_path_1'] = sub_df['file_path']
-            result_df['file_path_2'] = None
-            result_df['file_name'] = result_df.apply(lambda row: gen_filename(res1_row=row), axis=1)
-            result_df['plots_dir'] = plots_dir
-            result_df['plot_path'] = result_df.apply(lambda row: generate_plot_path(create_directory(row['sub'], row['ses'], row['plots_dir']), row['file_name']), axis=1)
-            result_df = result_df[['sub', 'ses', 'file_path_1', 'file_path_2', 'file_name', 'plots_dir', 'plot_path', 'datatype', 'resource_name', 'space', 'scan']].copy()
+        # else:
+        #     result_df = sub_df.copy()
+        #     result_df['file_path_1'] = sub_df['file_path']
+        #     result_df['file_path_2'] = None
+        #     result_df['file_name'] = result_df.apply(lambda row: gen_filename(res1_row=row), axis=1)
+        #     result_df['plots_dir'] = plots_dir
+        #     result_df['plot_path'] = result_df.apply(lambda row: generate_plot_path(create_directory(row['sub'], row['ses'], row['plots_dir']), row['file_name']), axis=1)
+        #     result_df = result_df[['sub', 'ses', 'file_path_1', 'file_path_2', 'file_name', 'plots_dir', 'plot_path', 'datatype', 'resource_name', 'space', 'scan']].copy()
 
         result_df['relative_path'] = result_df.apply(lambda row: os.path.relpath(row['plot_path'], qc_dir), axis=1)
         result_df['file_info'] = result_df.apply(lambda row: get_file_info(row['file_path_1']), axis=1)

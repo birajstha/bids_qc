@@ -2,21 +2,28 @@
 
 # CPAC-QC Plotting App
 
+### PDF Report
+example PDF report here: [PDF REPORT](static/sub-PA001_ses-V1W1_qc_report.pdf)
+
+### HTML Report
 ![CPAC-QC](https://raw.githubusercontent.com/birajstha/bids_qc/main/static/cpac-qc.png)
 
 ## Overview
 
 The CPAC-qc Plotting App is a tool designed to generate quality control plots for the CPAC (Configurable Pipeline for the Analysis of Connectomes) outputs. This app helps in visualizing and assessing the quality of neuroimaging data processed through CPAC.
 
-## Features
+## Updates
+- Outputs PDF (default) and HTML report (with -html flag) now.
+- [Default config](CPACqc/overlay/overlay.csv) has overlays.
 
-- Generate bulk or subject specific plots
-- Outputs PDF (default) and HTML report (with -html flag)
+## Features
+- Generate bulk or subject specific plots and reports.
 
 ## Requirements
 
 - BIDS dir with `.nii.gz` images in it.
 - (Optional) A html viewing tool or extension
+- PDF viewer
 
 ## Installation
 
@@ -48,16 +55,16 @@ This will create a pdf `report.pdf` along with a `results` dir with HTML report 
 3. **Running single/multiple Subjects**
 
 ```bash
-cpacqc -d path/to/bids_dir -o path/to/output-qc-dir -s subject-id_1 subject-id_2
+cpacqc -d bids_dir -s subject-id_1 subject-id_2
 ```
 
-You can hand pick a singl or a few subjects with `-s` flag
+You can hand pick a single or a multiple subjects with `-s` flag
 
 
-4. **Running Single Subject with defined number of procs**
+4. **Running with defined number of procs**
 
 ```bash
-cpacqc -d path/to/bids_dir -o path/to/output-qc-dir -s subject-id -n number-of-procs
+cpacqc -d path/to/bids_dir  -n number-of-procs
 ```
 
 Note: if -n is not provided default is 8
@@ -66,7 +73,7 @@ Note: if -n is not provided default is 8
 5. **Running all Subjects in the dir**
 
 ```bash
-cpacqc -d path/to/bids_dir -o path/to/output-qc-dir
+cpacqc -d path/to/bids_dir 
 ```
 
 or simply
@@ -76,22 +83,24 @@ cpacqc -d path/to/bids_dir
 ```
 
 
-6. **Plotting Overlays**
+6. **Providing Overlays config**
 
 ```bash
-cpacqc -d path/to/bids_dir -o qc_dir -c ./overlay.csv
+cpacqc -d path/to/bids_dir -c ./overlay.csv
 ```
 
 where overlay.csv can be in format
 
 ```csv
-image_1,image_2
+output,underlay
 desc-preproc_bold, desc-preproc_T1w
 ```
 
 and so on.
-
+If not provided a [default config](CPACqc/overlay/overlay.csv) will be used.
 
 ## Viewing
 
-Use any .html viewer extension to view index.html
+Use any PDF viewer to view `*report.pdf` file.
+
+If `-html` enabled, Use any `.html` viewer extension to view `index.html` in the `results` dir.

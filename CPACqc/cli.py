@@ -42,6 +42,34 @@ def run():
     if args.pdf is True:
         args.pdf = "report"
 
+    if args.config is not None:
+        if not os.path.exists(args.config):
+            print(Fore.RED + f"Config file not found: {args.config}")
+            print(Style.RESET_ALL)
+            return
+
+        if not os.path.isfile(args.config):
+            print(Fore.RED + f"Config file is not a file: {args.config}")
+            print(Style.RESET_ALL)
+            return
+
+        if not args.config.endswith('.csv'):
+            print(Fore.RED + f"Config file is not a CSV file: {args.config}")
+            print(Style.RESET_ALL)
+            return
+            
+        # check if it has output and underlay columns
+        config_df = pd.read_csv(args.config)
+        if 'output' not in config_df.columns:
+            print(Fore.RED + f"Config file does not have output column: {args.config}")
+            print(Style.RESET_ALL)
+            return
+
+    if args.config is None:
+        args.config = pkg_resources.resource_filename('CPACqc', 'overlay/overlay.csv')
+        print(Fore.YELLOW + f"Config file not specified. Using default config file: {args.config}")
+        print(Style.RESET_ALL)
+        
     try:
         # Create the QC output directory if it doesn't exist
         os.makedirs(args.qc_dir, exist_ok=True)
