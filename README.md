@@ -3,7 +3,7 @@
 # CPAC-QC Plotting App
 
 ### PDF Report
-example PDF report here: [PDF REPORT](static/sub-PA001_ses-V1W1_qc_report.pdf)
+example PDF report here: [PDF REPORT](https://github.com/birajstha/bids_qc/raw/main/static/sub-PA001_ses-V1W1_qc_report.pdf)
 
 ### HTML Report
 ![CPAC-QC](https://raw.githubusercontent.com/birajstha/bids_qc/main/static/cpac-qc.png)
@@ -14,7 +14,7 @@ The CPAC-qc Plotting App is a tool designed to generate quality control plots fo
 
 ## Updates
 - Outputs PDF (default) and HTML report (with -html flag) now.
-- [Default config](CPACqc/overlay/overlay.csv) has overlays.
+- [Default config](https://github.com/birajstha/bids_qc/raw/main/CPACqc/overlay/overlay.csv) has overlays.
 
 ## Features
 - Generate bulk or subject specific plots and reports.
@@ -97,7 +97,7 @@ desc-preproc_bold, desc-preproc_T1w
 ```
 
 and so on.
-If not provided a [default config](CPACqc/overlay/overlay.csv) will be used.
+If not provided a [default config](https://github.com/birajstha/bids_qc/raw/main/CPACqc/overlay/overlay.csv) will be used.
 
 ## Viewing
 
