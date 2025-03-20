@@ -1,14 +1,14 @@
 output,underlay,datatype
-desc-head_T1w
+desc-head_T1w,,anat
 desc-brain_mask,desc-head_T1w,anat
-desc-preproc_T1w
+desc-preproc_T1w,,anat
 
-label-*_mask,desc-preproc_T1w
-label-*_desc-preproc_mask,desc-preproc_T1w
-label-*_desc-eroded_mask,desc-preproc_T1w
+label-*_mask,desc-preproc_T1w,anat
+label-*_desc-preproc_mask,desc-preproc_T1w,anat
+label-*_desc-eroded_mask,desc-preproc_T1w,anat
 
-space-*_desc-preproc_T1w
+space-*_desc-preproc_T1w,,anat
 
-desc-preproc_bold
-desc-brain_mask
-space-*_bold
+desc-preproc_bold,,func
+desc-brain_mask,,func
+space-*_bold,,func

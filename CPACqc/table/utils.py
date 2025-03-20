@@ -60,14 +60,22 @@ def gen_resource_name(row):
     
     return resource_name
 
-# add a utility function to return rows provided a resource_name
-def get_rows_by_resource_name(resource_name, nii_gz_files):
+def get_rows_by_resource_name(resource_name, datatype, nii_gz_files):
     # Ensure nii_gz_files is a DataFrame and access the correct column
     if isinstance(nii_gz_files, pd.DataFrame):
-        # Filter rows using the fnmatch pattern
-        rows = nii_gz_files[nii_gz_files['resource_name'].apply(lambda x: fnmatch(x, resource_name))]
+        # Filter rows using the fnmatch pattern and datatype match if datatype is provided
+        if datatype:
+            rows = nii_gz_files[
+                nii_gz_files['resource_name'].apply(lambda x: fnmatch(x, resource_name)) &
+                (nii_gz_files['datatype'] == datatype)
+            ]
+        else:
+            rows = nii_gz_files[
+                nii_gz_files['resource_name'].apply(lambda x: fnmatch(x, resource_name))
+            ]
+        
         if len(rows) == 0:
-            logger.error(f"NOT FOUND: {resource_name}")
+            logger.error(f"NOT FOUND: {resource_name} with datatype: {datatype}")
             return None
         return rows
     else:
@@ -112,9 +120,10 @@ def generate_plot_path(sub_dir, file_name):
 def process_row(row, nii_gz_files, overlay_dir, plots_dir):
     image_1 = row.get("output", False)
     image_2 = row.get("underlay", False)
+    datatype = row.get("datatype", False)
 
-    resource_name_1 = get_rows_by_resource_name(image_1, nii_gz_files) if image_1 else None
-    resource_name_2 = get_rows_by_resource_name(image_2, nii_gz_files) if image_2 else None
+    resource_name_1 = get_rows_by_resource_name(image_1, datatype, nii_gz_files) if image_1 else None
+    resource_name_2 = get_rows_by_resource_name(image_2, False, nii_gz_files) if image_2 else None
 
     if resource_name_1 is None:
         logger.error(f"NOT FOUND: {image_1}")

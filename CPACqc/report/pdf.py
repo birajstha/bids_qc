@@ -58,18 +58,20 @@ class Report:
         self.canvas.setFont("Helvetica", 12)
         y_position = self.height - 150
         chapters = sorted(set(self.df['datatype'].dropna()))
-
+    
         for chapter in chapters:
             if y_position < 50:
                 self.canvas.showPage()
                 y_position = self.height - 50
             y_position -= 20
             self.canvas.setFillColor(colors.blue)
-            self.canvas.drawString(100, y_position, f"{chapter}")
+            self.canvas.drawString(80, y_position, f"{chapter}")
             text_width = self.canvas.stringWidth(chapter, "Helvetica", 12)
-            self.canvas.linkRect("", f"chapter_{chapter}", (100, y_position - 2, 100 + text_width, y_position + 10), color=colors.blue)
+            self.canvas.linkRect("", f"chapter_{chapter}", (80, y_position - 2, 80 + text_width, y_position + 10), color=colors.blue)
+            self.canvas.bookmarkPage(f"chapter_{chapter}")
+            self.canvas.addOutlineEntry(f"{chapter}", f"chapter_{chapter}", level=0)
             y_position -= 10
-
+    
             chapter_data = self.df[self.df['datatype'] == chapter]
             scans = sorted(set(chapter_data['scan'].dropna()))
             for scan in scans:
@@ -77,50 +79,58 @@ class Report:
                     self.canvas.showPage()
                     y_position = self.height - 50
                 self.canvas.setFillColor(colors.green)
-                self.canvas.drawString(120, y_position, f"{scan}")
+                self.canvas.drawString(100, y_position, f"{scan}")
                 text_width = self.canvas.stringWidth(scan, "Helvetica", 12)
                 if scan.strip() == '':
-                    self.canvas.linkRect("", f"subsection_{chapter}", (120, y_position - 2, 120 + text_width, y_position + 10), color=colors.green)
+                    self.canvas.linkRect("", f"subsection_{chapter}", (100, y_position - 2, 100 + text_width, y_position + 10), color=colors.green)
+                    self.canvas.bookmarkPage(f"subsection_{chapter}")
+                    self.canvas.addOutlineEntry(f"{chapter}", f"subsection_{chapter}", level=1)
                 else:
-                    self.canvas.linkRect("", f"subsection_{chapter}_{scan}", (120, y_position - 2, 120 + text_width, y_position + 10), color=colors.green)
+                    self.canvas.linkRect("", f"subsection_{chapter}_{scan}", (100, y_position - 2, 100 + text_width, y_position + 10), color=colors.green)
+                    self.canvas.bookmarkPage(f"subsection_{chapter}_{scan}")
+                    self.canvas.addOutlineEntry(f"{chapter} - {scan}", f"subsection_{chapter}_{scan}", level=1)
                 y_position -= 10
-
+    
                 scan_data = chapter_data[chapter_data['scan'] == scan]
-
+    
                 if not scan_data.empty:
                     ordered_images = []
                     extra_images = []
-
+    
                     if self.overlay_df is not None:
                         ordered_images = scan_data[scan_data['resource_name'].isin(self.overlay_df['output'])]
                         extra_images = scan_data[~scan_data['resource_name'].isin(self.overlay_df['output'])]
                     else:
                         ordered_images = scan_data
-
+    
                     # Remove duplicates, keeping only the last occurrence
                     ordered_images = ordered_images.drop_duplicates(subset='file_name', keep='last')
                     extra_images = extra_images.drop_duplicates(subset='file_name', keep='last')
-
+    
                     for _, image_data in ordered_images.iterrows():
                         if y_position < 50:
                             self.canvas.showPage()
                             y_position = self.height - 50
                         self.canvas.setFillColor(colors.black)
-                        self.canvas.drawString(140, y_position, f"{image_data['resource_name']}")
+                        self.canvas.drawString(120, y_position, f"{image_data['resource_name']}")
                         text_width = self.canvas.stringWidth(image_data['resource_name'], "Helvetica", 12)
-                        self.canvas.linkRect("", f"image_{chapter}_{scan}_{image_data['resource_name']}", (140, y_position - 2, 140 + text_width, y_position + 10), color=colors.blue)
+                        self.canvas.linkRect("", f"image_{chapter}_{scan}_{image_data['resource_name']}", (120, y_position - 2, 120 + text_width, y_position + 10), color=colors.blue)
+                        self.canvas.bookmarkPage(f"image_{chapter}_{scan}_{image_data['resource_name']}")
+                        self.canvas.addOutlineEntry(f"{image_data['resource_name']}", f"image_{chapter}_{scan}_{image_data['resource_name']}", level=2)
                         y_position -= 13
-
+    
                     for _, image_data in extra_images.iterrows():
                         if y_position < 50:
                             self.canvas.showPage()
                             y_position = self.height - 50
                         self.canvas.setFillColor(colors.black)
-                        self.canvas.drawString(140, y_position, f"{image_data['resource_name']}")
+                        self.canvas.drawString(120, y_position, f"{image_data['resource_name']}")
                         text_width = self.canvas.stringWidth(image_data['resource_name'], "Helvetica", 12)
-                        self.canvas.linkRect("", f"image_{chapter}_{scan}_{image_data['resource_name']}", (140, y_position - 2, 140 + text_width, y_position + 10), color=colors.blue)
+                        self.canvas.linkRect("", f"image_{chapter}_{scan}_{image_data['resource_name']}", (120, y_position - 2, 120 + text_width, y_position + 10), color=colors.blue)
+                        self.canvas.bookmarkPage(f"image_{chapter}_{scan}_{image_data['resource_name']}")
+                        self.canvas.addOutlineEntry(f"{image_data['resource_name']}", f"image_{chapter}_{scan}_{image_data['resource_name']}", level=2)
                         y_position -= 13
-
+    
                 y_position -= 10
         self.canvas.showPage()
 

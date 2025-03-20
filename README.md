@@ -3,6 +3,7 @@
 # CPAC-QC Plotting App
 
 ### PDF Report
+![PDF report](https://raw.githubusercontent.com/birajstha/bids_qc/main/static/cpac-qc_pdf.png)
 example PDF report here: [PDF REPORT](https://github.com/birajstha/bids_qc/raw/main/static/sub-PA001_ses-V1W1_qc_report.pdf)
 
 ### HTML Report
@@ -15,6 +16,8 @@ The CPAC-qc Plotting App is a tool designed to generate quality control plots fo
 ## Updates
 - Outputs PDF (default) and HTML report (with -html flag) now.
 - [Default config](https://github.com/birajstha/bids_qc/raw/main/CPACqc/overlay/overlay.csv) has overlays.
+- Images on PDF report will follow the order mentioned in overlay.csv provided or default.
+- Added Bookmarks on PDF report for easy navigation.
 
 ## Features
 - Generate bulk or subject specific plots and reports.
@@ -73,13 +76,7 @@ Note: if -n is not provided default is 8
 5. **Running all Subjects in the dir**
 
 ```bash
-cpacqc -d path/to/bids_dir 
-```
-
-or simply
-
-```bash
-cpacqc -d path/to/bids_dir
+cpacqc -d /bids_dir 
 ```
 
 
@@ -92,8 +89,8 @@ cpacqc -d path/to/bids_dir -c ./overlay.csv
 where overlay.csv can be in format
 
 ```csv
-output,underlay
-desc-preproc_bold, desc-preproc_T1w
+output,underlay,datatype
+desc-preproc_bold,desc-preproc_T1w,func
 ```
 
 and so on.
