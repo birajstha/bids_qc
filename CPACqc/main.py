@@ -60,22 +60,15 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8, pdf=False):
         missing_rows['plot_path'] = missing_rows.apply(lambda row: generate_plot_path(create_directory(row['sub'], row['ses'], row['plots_dir']), row['file_name']), axis=1)
         missing_rows = missing_rows[['sub', 'ses', 'file_path_1', 'file_path_2', 'file_name', 'plots_dir', 'plot_path', 'datatype', 'resource_name', 'space', 'scan']].copy()
         result_df = pd.concat([result_df, missing_rows], ignore_index=True)
-        # if config is not provided, use the default config
-        # else:
-        #     result_df = sub_df.copy()
-        #     result_df['file_path_1'] = sub_df['file_path']
-        #     result_df['file_path_2'] = None
-        #     result_df['file_name'] = result_df.apply(lambda row: gen_filename(res1_row=row), axis=1)
-        #     result_df['plots_dir'] = plots_dir
-        #     result_df['plot_path'] = result_df.apply(lambda row: generate_plot_path(create_directory(row['sub'], row['ses'], row['plots_dir']), row['file_name']), axis=1)
-        #     result_df = result_df[['sub', 'ses', 'file_path_1', 'file_path_2', 'file_name', 'plots_dir', 'plot_path', 'datatype', 'resource_name', 'space', 'scan']].copy()
-
         result_df['relative_path'] = result_df.apply(lambda row: os.path.relpath(row['plot_path'], qc_dir), axis=1)
         result_df['file_info'] = result_df.apply(lambda row: get_file_info(row['file_path_1']), axis=1)
         
         result_df_csv_path = os.path.join(csv_dir, f"{sub_ses}_results.csv")
         result_df.to_csv(result_df_csv_path, mode='a' if os.path.exists(result_df_csv_path) else 'w', header=not os.path.exists(result_df_csv_path), index=False)
-    
+        
+        # analyze the result_df and remove the duplicate rows
+        result_df = result_df.drop_duplicates(subset=["file_path_1", "file_path_2", "file_name", "plots_dir", "plot_path", "datatype", "resource_name", "space", "scan"], keep="first")
+        
         args = [
             (
                 row['sub'], 
@@ -90,6 +83,8 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8, pdf=False):
         ]
 
         not_plotted += run_multiprocessing(run_wrapper, args, n_procs)
+
+
 
         if pdf:
             try:

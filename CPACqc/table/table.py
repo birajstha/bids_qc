@@ -22,6 +22,9 @@ def preprocess(df):
     # Filter rows where file_path ends with .nii.gz
     nii_gz_files = df[df.file_path.str.endswith(".nii.gz")].copy()
 
+    # filter rows and ommit xfm.nii.gz files
+    nii_gz_files = nii_gz_files.loc[~nii_gz_files.file_path.str.contains("xfm.nii.gz")]
+
     # Add a column that breaks the file_path to the last name of the file and drops extension
     nii_gz_files.loc[:, "file_name"] = nii_gz_files.file_path.apply(lambda x: os.path.basename(x).replace(".nii.gz", ""))
 

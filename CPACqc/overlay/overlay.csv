@@ -1,10 +1,14 @@
-output,underlay
-label-WM_desc-preproc_mask,desc-preproc_T1w
-label-GM_desc-preproc_mask,desc-preproc_T1w
-label-CSF_desc-preproc_mask,desc-preproc_T1w
+output,underlay,datatype
+desc-head_T1w
+desc-brain_mask,desc-head_T1w,anat
+desc-preproc_T1w
 
-label-WM_mask,desc-preproc_T1w
-label-GM_mask,desc-preproc_T1w
-label-CSF_mask,desc-preproc_T1w
+label-*_mask,desc-preproc_T1w
+label-*_desc-preproc_mask,desc-preproc_T1w
+label-*_desc-eroded_mask,desc-preproc_T1w
 
-desc-preproc_bold,desc-preproc_T1w
+space-*_desc-preproc_T1w
+
+desc-preproc_bold
+desc-brain_mask
+space-*_bold

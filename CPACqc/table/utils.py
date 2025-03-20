@@ -16,6 +16,7 @@ from CPACqc.logging.log import logger
 
 import json
 import re
+from fnmatch import fnmatch
 
 def get_file_info(file_path):
     img = nib.load(file_path)
@@ -63,7 +64,8 @@ def gen_resource_name(row):
 def get_rows_by_resource_name(resource_name, nii_gz_files):
     # Ensure nii_gz_files is a DataFrame and access the correct column
     if isinstance(nii_gz_files, pd.DataFrame):
-        rows = nii_gz_files[nii_gz_files['resource_name'].str.endswith(resource_name)]
+        # Filter rows using the fnmatch pattern
+        rows = nii_gz_files[nii_gz_files['resource_name'].apply(lambda x: fnmatch(x, resource_name))]
         if len(rows) == 0:
             logger.error(f"NOT FOUND: {resource_name}")
             return None

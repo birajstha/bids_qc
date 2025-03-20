@@ -1,4 +1,8 @@
 from CPACqc.report.utils import *
+import pandas as pd
+from fnmatch import fnmatch
+from CPACqc.logging.log import logger
+from CPACqc.report.utils import *
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
@@ -6,7 +10,6 @@ from reportlab.platypus import Paragraph, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 from colorama import Fore, Style
-import pandas as pd
 import os
 import json
 
@@ -94,6 +97,10 @@ class Report:
                     else:
                         ordered_images = scan_data
 
+                    # Remove duplicates, keeping only the last occurrence
+                    ordered_images = ordered_images.drop_duplicates(subset='file_name', keep='last')
+                    extra_images = extra_images.drop_duplicates(subset='file_name', keep='last')
+
                     for _, image_data in ordered_images.iterrows():
                         if y_position < 50:
                             self.canvas.showPage()
@@ -144,6 +151,10 @@ class Report:
                         extra_images = scan_data[~scan_data['resource_name'].isin(self.overlay_df['output'])]
                     else:
                         ordered_images = scan_data
+
+                    # Remove duplicates, keeping only the last occurrence
+                    ordered_images = ordered_images.drop_duplicates(subset='file_name', keep='last')
+                    extra_images = extra_images.drop_duplicates(subset='file_name', keep='last')
 
                     y_position = self.height - 30
 
