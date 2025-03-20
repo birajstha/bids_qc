@@ -3,9 +3,17 @@ desc-head_T1w,,anat
 desc-brain_mask,desc-head_T1w,anat
 desc-preproc_T1w,,anat
 
-label-*_mask,desc-preproc_T1w,anat
-label-*_desc-preproc_mask,desc-preproc_T1w,anat
-label-*_desc-eroded_mask,desc-preproc_T1w,anat
+label-GM_mask,desc-preproc_T1w,anat
+label-WM_mask,desc-preproc_T1w,anat
+label-CSF_mask,desc-preproc_T1w,anat
+
+label-GM_desc-preproc_mask,desc-preproc_T1w,anat
+label-WM_desc-preproc_mask,desc-preproc_T1w,anat
+label-CSF_desc-preproc_mask,desc-preproc_T1w,anat
+
+label-GM_desc-eroded_mask,desc-preproc_T1w,anat
+label-WM_desc-eroded_mask,desc-preproc_T1w,anat
+label-CSF_desc-eroded_mask,desc-preproc_T1w,anat
 
 space-*_desc-preproc_T1w,,anat
 

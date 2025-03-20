@@ -48,7 +48,7 @@ class Report:
 
         self.canvas.setFont("Helvetica", 12)
         self.canvas.drawCentredString(self.width / 2, 100, f"Created on: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        self.canvas.drawCentredString(self.width / 2, 80, "CPAC developers")
+        self.canvas.drawCentredString(self.width / 2, 80, "CPAC Team")
 
         self.canvas.showPage()
 
