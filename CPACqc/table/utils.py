@@ -57,7 +57,6 @@ def gen_resource_name(row):
     # Use regular expression to replace the pattern
     pattern = re.escape(f"{sub_ses}_") + scan
     resource_name = re.sub(pattern, "", row["file_name"])
-    
     return resource_name
 
 def get_rows_by_resource_name(resource_name, datatype, nii_gz_files):

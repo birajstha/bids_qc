@@ -100,7 +100,9 @@ def run():
         if os.path.exists(csv_dir):
             # Combine all the csv files into one
             combined_csv = os.path.join(args.qc_dir, 'results.csv')
-            combined_df = pd.concat([pd.read_csv(os.path.join(csv_dir, f)) for f in os.listdir(csv_dir) if f.endswith('.csv')])
+            combined_df = pd.concat(
+                [pd.read_csv(os.path.join(csv_dir, f)) for f in os.listdir(csv_dir) if f.endswith('.csv') and os.path.getsize(os.path.join(csv_dir, f)) > 0]
+            )
             combined_df.to_csv(combined_csv, index=False)
         else:
             print(Fore.RED + "No CSV files found in the QC output directory. Please check the log for details.")

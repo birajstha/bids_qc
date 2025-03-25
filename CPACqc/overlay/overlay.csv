@@ -18,6 +18,7 @@ label-WM_desc-eroded_mask,desc-preproc_T1w,anat
 label-CSF_mask,desc-preproc_T1w,anat
 label-CSF_desc-preproc_mask,desc-preproc_T1w,anat
 label-CSF_desc-eroded_mask,desc-preproc_T1w,anat
+desc-eroded_mask,desc-preproc_T1w,anat
 
 desc-eroded_mask,desc-preproc_T1w,anat
 
