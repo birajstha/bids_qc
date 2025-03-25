@@ -12,17 +12,48 @@ from reportlab.lib import colors
 from colorama import Fore, Style
 import os
 import json
+from dataclasses import dataclass, field
 
+@dataclass
 class Report:
-    def __init__(self, df, qc_dir, sub_ses, overlay_df=None):
-        self.df = df
-        self.qc_dir = qc_dir
-        self.sub_ses = sub_ses
-        self.overlay_df = overlay_df
-        self.pdf_path = self.get_pdf_path()
-        self.canvas = canvas.Canvas(self.pdf_path, pagesize=letter)
-        self.width, self.height = letter
-        self.styles = getSampleStyleSheet()
+    # Singleton instance
+    _instance: "Report" = field(default=None, init=False, repr=False)
+
+    # Attributes for the Report class
+    df: pd.DataFrame = None
+    qc_dir: str = None
+    sub_ses: str = None
+    overlay_df: pd.DataFrame = None
+    pdf_path: str = field(init=False)
+    pdf_canvas:  canvas.Canvas = field(init=False)  # Renamed to avoid conflict
+    width: int = field(init=False, default=letter[0])
+    height: int = field(init=False, default=letter[1])
+    styles: object = field(init=False, default_factory=getSampleStyleSheet)
+    missing_files: list = field(default_factory=list)
+    
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(Report, cls).__new__(cls)
+        return cls._instance
+
+    def __post_init__(self):
+        if self.qc_dir and self.sub_ses:
+            self.pdf_path = self.get_pdf_path()
+            self.pdf_canvas = canvas.Canvas(self.pdf_path, pagesize=letter)
+        else:
+            self.pdf_path = None
+            self.pdf_canvas = None
+
+
+    @classmethod
+    def destroy_instance(cls):
+        """Destroy the singleton instance."""
+        if cls._instance:
+            cls._instance = None
+            
+    def add_missing_files(self, missing_files):
+        self.missing_files.append(missing_files) 
+        return
 
     def get_pdf_path(self):
         pdf = f"{self.sub_ses}_qc_report.pdf"
@@ -37,58 +68,58 @@ class Report:
         logo_width = 150
         logo_height = 150
 
-        self.canvas.setFont("Helvetica", 25)
+        self.pdf_canvas.setFont("Helvetica", 25)
         title = Paragraph(f"{self.sub_ses.replace('_', ' ')}", self.styles['Title'])
-        title.wrapOn(self.canvas, self.width - 40, self.height)
-        title.drawOn(self.canvas, 20, self.height - 100)
+        title.wrapOn(self.pdf_canvas, self.width - 40, self.height)
+        title.drawOn(self.pdf_canvas, 20, self.height - 100)
 
-        self.canvas.drawImage(logo_img, (self.width - logo_width) / 2, (self.height - logo_height) / 2, width=logo_width, height=logo_height)
-        self.canvas.setFont("Helvetica", 15)
-        self.canvas.drawCentredString(self.width / 2, self.height - 120, "Quality Control Report")
+        self.pdf_canvas.drawImage(logo_img, (self.width - logo_width) / 2, (self.height - logo_height) / 2, width=logo_width, height=logo_height)
+        self.pdf_canvas.setFont("Helvetica", 15)
+        self.pdf_canvas.drawCentredString(self.width / 2, self.height - 120, "Quality Control Report")
 
-        self.canvas.setFont("Helvetica", 12)
-        self.canvas.drawCentredString(self.width / 2, 100, f"Created on: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        self.canvas.drawCentredString(self.width / 2, 80, "CPAC Team")
+        self.pdf_canvas.setFont("Helvetica", 12)
+        self.pdf_canvas.drawCentredString(self.width / 2, 100, f"Created on: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        self.pdf_canvas.drawCentredString(self.width / 2, 80, "CPAC Team")
 
-        self.canvas.showPage()
+        self.pdf_canvas.showPage()
 
     def add_contents_page(self):
-        self.canvas.setFont("Helvetica", 20)
-        self.canvas.drawCentredString(self.width / 2, self.height - 100, "Contents")
-        self.canvas.setFont("Helvetica", 12)
+        self.pdf_canvas.setFont("Helvetica", 20)
+        self.pdf_canvas.drawCentredString(self.width / 2, self.height - 100, "Contents")
+        self.pdf_canvas.setFont("Helvetica", 12)
         y_position = self.height - 150
         chapters = sorted(set(self.df['datatype'].dropna()))
     
         for chapter in chapters:
             if y_position < 50:
-                self.canvas.showPage()
+                self.pdf_canvas.showPage()
                 y_position = self.height - 50
             y_position -= 20
-            self.canvas.setFillColor(colors.blue)
-            self.canvas.drawString(80, y_position, f"{chapter}")
-            text_width = self.canvas.stringWidth(chapter, "Helvetica", 12)
-            self.canvas.linkRect("", f"chapter_{chapter}", (80, y_position - 2, 80 + text_width, y_position + 10), color=colors.blue)
-            self.canvas.bookmarkPage(f"chapter_{chapter}")
-            self.canvas.addOutlineEntry(f"{chapter}", f"chapter_{chapter}", level=0)
+            self.pdf_canvas.setFillColor(colors.blue)
+            self.pdf_canvas.drawString(80, y_position, f"{chapter}")
+            text_width = self.pdf_canvas.stringWidth(chapter, "Helvetica", 12)
+            self.pdf_canvas.linkRect("", f"chapter_{chapter}", (80, y_position - 2, 80 + text_width, y_position + 10), color=colors.blue)
+            self.pdf_canvas.bookmarkPage(f"chapter_{chapter}")
+            self.pdf_canvas.addOutlineEntry(f"{chapter}", f"chapter_{chapter}", level=0)
             y_position -= 10
     
             chapter_data = self.df[self.df['datatype'] == chapter]
             scans = sorted(set(chapter_data['scan'].dropna()))
             for scan in scans:
                 if y_position < 50:
-                    self.canvas.showPage()
+                    self.pdf_canvas.showPage()
                     y_position = self.height - 50
-                self.canvas.setFillColor(colors.green)
-                self.canvas.drawString(100, y_position, f"{scan}")
-                text_width = self.canvas.stringWidth(scan, "Helvetica", 12)
+                self.pdf_canvas.setFillColor(colors.green)
+                self.pdf_canvas.drawString(100, y_position, f"{scan}")
+                text_width = self.pdf_canvas.stringWidth(scan, "Helvetica", 12)
                 if scan.strip() == '':
-                    self.canvas.linkRect("", f"subsection_{chapter}", (100, y_position - 2, 100 + text_width, y_position + 10), color=colors.green)
-                    self.canvas.bookmarkPage(f"subsection_{chapter}")
-                    self.canvas.addOutlineEntry(f"{chapter}", f"subsection_{chapter}", level=1)
+                    self.pdf_canvas.linkRect("", f"subsection_{chapter}", (100, y_position - 2, 100 + text_width, y_position + 10), color=colors.green)
+                    self.pdf_canvas.bookmarkPage(f"subsection_{chapter}")
+                    self.pdf_canvas.addOutlineEntry(f"{chapter}", f"subsection_{chapter}", level=1)
                 else:
-                    self.canvas.linkRect("", f"subsection_{chapter}_{scan}", (100, y_position - 2, 100 + text_width, y_position + 10), color=colors.green)
-                    self.canvas.bookmarkPage(f"subsection_{chapter}_{scan}")
-                    self.canvas.addOutlineEntry(f"{chapter} - {scan}", f"subsection_{chapter}_{scan}", level=1)
+                    self.pdf_canvas.linkRect("", f"subsection_{chapter}_{scan}", (100, y_position - 2, 100 + text_width, y_position + 10), color=colors.green)
+                    self.pdf_canvas.bookmarkPage(f"subsection_{chapter}_{scan}")
+                    self.pdf_canvas.addOutlineEntry(f"{chapter} - {scan}", f"subsection_{chapter}_{scan}", level=1)
                 y_position -= 10
     
                 scan_data = chapter_data[chapter_data['scan'] == scan]
@@ -109,30 +140,30 @@ class Report:
     
                     for _, image_data in ordered_images.iterrows():
                         if y_position < 50:
-                            self.canvas.showPage()
+                            self.pdf_canvas.showPage()
                             y_position = self.height - 50
-                        self.canvas.setFillColor(colors.black)
-                        self.canvas.drawString(120, y_position, f"{image_data['resource_name']}")
-                        text_width = self.canvas.stringWidth(image_data['resource_name'], "Helvetica", 12)
-                        self.canvas.linkRect("", f"image_{chapter}_{scan}_{image_data['resource_name']}", (120, y_position - 2, 120 + text_width, y_position + 10), color=colors.blue)
-                        self.canvas.bookmarkPage(f"image_{chapter}_{scan}_{image_data['resource_name']}")
-                        self.canvas.addOutlineEntry(f"{image_data['resource_name']}", f"image_{chapter}_{scan}_{image_data['resource_name']}", level=2)
+                        self.pdf_canvas.setFillColor(colors.black)
+                        self.pdf_canvas.drawString(120, y_position, f"{image_data['resource_name']}")
+                        text_width = self.pdf_canvas.stringWidth(image_data['resource_name'], "Helvetica", 12)
+                        self.pdf_canvas.linkRect("", f"image_{chapter}_{scan}_{image_data['resource_name']}", (120, y_position - 2, 120 + text_width, y_position + 10), color=colors.blue)
+                        self.pdf_canvas.bookmarkPage(f"image_{chapter}_{scan}_{image_data['resource_name']}")
+                        self.pdf_canvas.addOutlineEntry(f"{image_data['resource_name']}", f"image_{chapter}_{scan}_{image_data['resource_name']}", level=2)
                         y_position -= 13
     
                     for _, image_data in extra_images.iterrows():
                         if y_position < 50:
-                            self.canvas.showPage()
+                            self.pdf_canvas.showPage()
                             y_position = self.height - 50
-                        self.canvas.setFillColor(colors.black)
-                        self.canvas.drawString(120, y_position, f"{image_data['resource_name']}")
-                        text_width = self.canvas.stringWidth(image_data['resource_name'], "Helvetica", 12)
-                        self.canvas.linkRect("", f"image_{chapter}_{scan}_{image_data['resource_name']}", (120, y_position - 2, 120 + text_width, y_position + 10), color=colors.blue)
-                        self.canvas.bookmarkPage(f"image_{chapter}_{scan}_{image_data['resource_name']}")
-                        self.canvas.addOutlineEntry(f"{image_data['resource_name']}", f"image_{chapter}_{scan}_{image_data['resource_name']}", level=2)
+                        self.pdf_canvas.setFillColor(colors.black)
+                        self.pdf_canvas.drawString(120, y_position, f"{image_data['resource_name']}")
+                        text_width = self.pdf_canvas.stringWidth(image_data['resource_name'], "Helvetica", 12)
+                        self.pdf_canvas.linkRect("", f"image_{chapter}_{scan}_{image_data['resource_name']}", (120, y_position - 2, 120 + text_width, y_position + 10), color=colors.blue)
+                        self.pdf_canvas.bookmarkPage(f"image_{chapter}_{scan}_{image_data['resource_name']}")
+                        self.pdf_canvas.addOutlineEntry(f"{image_data['resource_name']}", f"image_{chapter}_{scan}_{image_data['resource_name']}", level=2)
                         y_position -= 13
     
                 y_position -= 10
-        self.canvas.showPage()
+        self.pdf_canvas.showPage()
 
     def add_images(self):
         chapters = sorted(set(self.df['datatype'].dropna()))
@@ -175,20 +206,20 @@ class Report:
                         y_position, page_number = self.add_image(image_data, chapter, scan, y_position, page_number)
 
     def add_chapter_title_page(self, chapter):
-        self.canvas.setFont("Helvetica", 30)
-        self.canvas.drawCentredString(self.width / 2, self.height / 2, chapter)
-        self.canvas.bookmarkPage(f"chapter_{chapter}")
-        self.canvas.showPage()
+        self.pdf_canvas.setFont("Helvetica", 30)
+        self.pdf_canvas.drawCentredString(self.width / 2, self.height / 2, chapter)
+        self.pdf_canvas.bookmarkPage(f"chapter_{chapter}")
+        self.pdf_canvas.showPage()
 
     def add_scan_title_page(self, chapter, scan):
         if scan.strip() == '':
             print(Fore.YELLOW + f"Scan name is empty for chapter {chapter}. Skipping..." + Style.RESET_ALL)
-            self.canvas.bookmarkPage(f"subsection_{chapter}")
+            self.pdf_canvas.bookmarkPage(f"subsection_{chapter}")
             return
-        self.canvas.setFont("Helvetica", 25)
-        self.canvas.drawCentredString(self.width / 2, self.height / 2, f"{chapter} - {scan}")
-        self.canvas.bookmarkPage(f"subsection_{chapter}_{scan}")
-        self.canvas.showPage()
+        self.pdf_canvas.setFont("Helvetica", 25)
+        self.pdf_canvas.drawCentredString(self.width / 2, self.height / 2, f"{chapter} - {scan}")
+        self.pdf_canvas.bookmarkPage(f"subsection_{chapter}_{scan}")
+        self.pdf_canvas.showPage()
 
     def add_image(self, image_data, chapter, scan, y_position, page_number):
         image_path = os.path.join(self.qc_dir, image_data['relative_path'])
@@ -212,16 +243,16 @@ class Report:
                 y_position = self.height - 30
                 self.add_header(chapter, scan)
 
-            self.canvas.setFont("Helvetica", 15)
-            self.canvas.drawString(10, y_position - 20, f"{image_data['resource_name']}")
-            self.canvas.bookmarkPage(f"image_{chapter}_{scan}_{image_data['resource_name']}")
+            self.pdf_canvas.setFont("Helvetica", 15)
+            self.pdf_canvas.drawString(10, y_position - 20, f"{image_data['resource_name']}")
+            self.pdf_canvas.bookmarkPage(f"image_{chapter}_{scan}_{image_data['resource_name']}")
 
-            self.canvas.drawImage(img, (self.width - img_width) / 2, y_position - img_height - 40, width=img_width, height=img_height)
+            self.pdf_canvas.drawImage(img, (self.width - img_width) / 2, y_position - img_height - 40, width=img_width, height=img_height)
 
             label = f"{image_data['file_name']}"
             self.styles['Normal'].textColor = colors.whitesmoke
             wrapped_label = Paragraph(label, self.styles['Normal'])
-            wrapped_label.wrapOn(self.canvas, self.width - 20, self.height)
+            wrapped_label.wrapOn(self.pdf_canvas, self.width - 20, self.height)
 
             file_info = json.loads(image_data['file_info'])
             file_info_text = [
@@ -249,30 +280,52 @@ class Report:
                 ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
                 ('GRID', (0, 0), (-1, -1), 1, colors.black),
             ]))
-            table.wrapOn(self.canvas, self.width - 20, self.height)
+            table.wrapOn(self.pdf_canvas, self.width - 20, self.height)
             table_height = table.wrap(self.width - 20, self.height)[1]
-            table.drawOn(self.canvas, 10, y_position - img_height - table_height - 60)
+            table.drawOn(self.pdf_canvas, 10, y_position - img_height - table_height - 60)
 
             y_position -= img_height + table_height + 70
             
-            self.canvas.showPage()
+            self.pdf_canvas.showPage()
         return y_position, page_number
 
     def add_header(self, chapter, scan):
-        self.canvas.setFont("Helvetica", 12)
-        self.canvas.drawString(10, self.height - 30, f"Chapter : {chapter}/{scan}")
+        self.pdf_canvas.setFont("Helvetica", 12)
+        self.pdf_canvas.drawString(10, self.height - 30, f"Chapter : {chapter}/{scan}")
 
     def add_footer(self, page_number):
-        self.canvas.drawRightString(self.width - 30, 20, str(page_number))
+        self.pdf_canvas.drawRightString(self.width - 30, 20, str(page_number))
 
-    def generate(self):
+    def add_missing_files_page(self):
+        if not self.missing_files:
+            print(Fore.YELLOW + "No missing files to report." + Style.RESET_ALL)
+            return
+        self.pdf_canvas.bookmarkPage("Missing Files")
+        self.pdf_canvas.setFont("Helvetica", 20)
+        self.pdf_canvas.drawCentredString(self.width / 2, self.height - 120, "Missing Files")
+        self.pdf_canvas.setFont("Helvetica", 12)
+    
+        y_position = self.height - 150
+        for file in self.missing_files:
+            print(Fore.YELLOW + f"Missing file: {file}" + Style.RESET_ALL)
+            if y_position < 50:
+                self.pdf_canvas.showPage()
+                y_position = self.height - 50
+    
+            self.pdf_canvas.setFont("Helvetica", 12)
+            self.pdf_canvas.drawString(70, y_position - 20, file)
+            y_position -= 13
+    
+        self.pdf_canvas.showPage()
+        self.pdf_canvas.setFont("Helvetica", 25)
+        self.pdf_canvas.drawCentredString(self.width / 2, self.height / 2, "End of Report")
+        self.pdf_canvas.showPage()
+
+    def generate_report(self):
         print(Fore.YELLOW + "Generating PDF report..." + Style.RESET_ALL)
         self.add_front_page()
         self.add_contents_page()
         self.add_images()
-        self.canvas.save()
+        self.add_missing_files_page()
+        self.pdf_canvas.save()
         print(Fore.GREEN + "PDF report generated successfully." + Style.RESET_ALL)
-
-def make_pdf(df, qc_dir, sub_ses, overlay_df=None):
-    report = Report(df, qc_dir, sub_ses, overlay_df)
-    report.generate()

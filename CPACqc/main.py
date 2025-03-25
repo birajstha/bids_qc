@@ -7,8 +7,8 @@ import argparse
 from CPACqc.table.table import preprocess
 from CPACqc.table.utils import *
 from CPACqc.multiprocessing.multiprocessing_utils import run_multiprocessing
-from CPACqc.report.pdf import make_pdf
 from CPACqc.logging.log import logger
+from CPACqc.report.pdf import Report
 
 def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8, pdf=False):
     os.makedirs(qc_dir, exist_ok=True)
@@ -48,7 +48,15 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8, pdf=False):
         logger.info(f"Processing {sub_ses} ({index}/{no_sub_ses})...")
 
         overlay_df = pd.read_csv(config).fillna(False)
-        results = overlay_df.apply(lambda row: process_row(row, sub_df, overlay_dir, plots_dir), axis=1).tolist()
+        
+        # initialize the report
+        report = Report(
+            qc_dir=qc_dir,
+            sub_ses=sub_ses,
+            overlay_df=overlay_df if config else None
+        )
+
+        results = overlay_df.apply(lambda row: process_row(row, sub_df, overlay_dir, plots_dir, report), axis=1).tolist()
         results = [item for sublist in results for item in sublist]  # Flatten the list of lists
         result_df = pd.DataFrame(results)
         if 'file_path_1' not in result_df.columns:
@@ -91,7 +99,10 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8, pdf=False):
 
         if pdf:
             try:
-                make_pdf(result_df, qc_dir, sub_ses, overlay_df=overlay_df if config else None)
+                report.df = result_df
+                report.generate_report()
+                Report.destroy_instance()
+
             except Exception as e:
                 logger.error(f"Error generating PDF: {e}")
                 print(Fore.RED + f"Error generating PDF: {e}" + Style.RESET_ALL)

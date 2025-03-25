@@ -116,7 +116,7 @@ def create_directory(sub, ses, base_dir):
 def generate_plot_path(sub_dir, file_name):
     return os.path.join(sub_dir, f"{file_name}.png")
 
-def process_row(row, nii_gz_files, overlay_dir, plots_dir):
+def process_row(row, nii_gz_files, overlay_dir, plots_dir, report):
     image_1 = row.get("output", False)
     image_2 = row.get("underlay", False)
     datatype = row.get("datatype", False)
@@ -126,6 +126,7 @@ def process_row(row, nii_gz_files, overlay_dir, plots_dir):
 
     if resource_name_1 is None:
         logger.error(f"NOT FOUND: {image_1}")
+        report.add_missing_files(image_1)
         return []
 
     result_rows = []
