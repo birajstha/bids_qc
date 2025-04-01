@@ -89,36 +89,37 @@ def run():
 
     not_plotted = main(args.bids_dir, args.qc_dir, args.config, args.sub, args.n_procs, args.pdf)
 
-    if not args.html:
-        # remove the qc_dir if not generating HTML report
-        print(Fore.YELLOW + f"Removing the QC output directory: {args.qc_dir}")
-        print(Style.RESET_ALL)
-        shutil.rmtree(args.qc_dir)
-    else:
-        # combine all the csvs inside qc_dir/csv into one csv and name it results.csv
-        csv_dir = os.path.join(args.qc_dir, 'csv')
-        if os.path.exists(csv_dir):
-            # Combine all the csv files into one
-            combined_csv = os.path.join(args.qc_dir, 'results.csv')
-            combined_df = pd.concat(
-                [pd.read_csv(os.path.join(csv_dir, f)) for f in os.listdir(csv_dir) if f.endswith('.csv') and os.path.getsize(os.path.join(csv_dir, f)) > 0]
-            )
-            combined_df.to_csv(combined_csv, index=False)
-        else:
-            print(Fore.RED + "No CSV files found in the QC output directory. Please check the log for details.")
+    if not args.qc_dir:
+        if not args.html:
+            # remove the qc_dir if not generating HTML report
+            print(Fore.YELLOW + f"Removing the QC output directory: {args.qc_dir}")
             print(Style.RESET_ALL)
-            return
-        # Rename the qc_dir to results
-        new_qc_dir = os.path.join(os.getcwd(), 'results')
-        print(Fore.YELLOW + f"Creating HTML report in results dir: {new_qc_dir}")
-        print(Style.RESET_ALL)
-        
-        # Check if the results directory already exists and remove it if it does
-        if os.path.exists(new_qc_dir):
-            shutil.rmtree(new_qc_dir)
-        
-        shutil.move(args.qc_dir, new_qc_dir)
-        print(Fore.YELLOW + "Done.")
+            shutil.rmtree(args.qc_dir)
+        else:
+            # combine all the csvs inside qc_dir/csv into one csv and name it results.csv
+            csv_dir = os.path.join(args.qc_dir, 'csv')
+            if os.path.exists(csv_dir):
+                # Combine all the csv files into one
+                combined_csv = os.path.join(args.qc_dir, 'results.csv')
+                combined_df = pd.concat(
+                    [pd.read_csv(os.path.join(csv_dir, f)) for f in os.listdir(csv_dir) if f.endswith('.csv') and os.path.getsize(os.path.join(csv_dir, f)) > 0]
+                )
+                combined_df.to_csv(combined_csv, index=False)
+            else:
+                print(Fore.RED + "No CSV files found in the QC output directory. Please check the log for details.")
+                print(Style.RESET_ALL)
+                return
+            # Rename the qc_dir to results
+            new_qc_dir = os.path.join(os.getcwd(), 'results')
+            print(Fore.YELLOW + f"Creating HTML report in results dir: {new_qc_dir}")
+            print(Style.RESET_ALL)
+            
+            # Check if the results directory already exists and remove it if it does
+            if os.path.exists(new_qc_dir):
+                shutil.rmtree(new_qc_dir)
+            
+            shutil.move(args.qc_dir, new_qc_dir)
+            print(Fore.YELLOW + "Done.")
 
     if len(not_plotted) > 0:
         print(Fore.RED + "Some files were not plotted. Please check the log for details.")
