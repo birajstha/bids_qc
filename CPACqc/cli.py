@@ -24,8 +24,6 @@ def run():
     parser.add_argument("-s", "--sub", nargs='+', required=False, help="Specify subject/participant label(s) to process")
     parser.add_argument("-n", "--n_procs", type=int, default=8, help="Number of processes to use for multiprocessing")
     parser.add_argument("-v", "--version", action='version', version=f'%(prog)s {__version__}', help="Show the version number and exit")
-    parser.add_argument("-pdf", "--pdf", nargs='?', const=True, action=StoreTrueOrString, default=True, help="Generate PDF report (default: 'report')")
-    parser.add_argument("-html", "--html", action='store_true', help="Generate HTML report")
     
     args = parser.parse_args()
 
@@ -74,52 +72,28 @@ def run():
         # Create the QC output directory if it doesn't exist
         os.makedirs(args.qc_dir, exist_ok=True)
 
-        if args.html:
-            # Locate the templates directory within the package
-            templates_dir = pkg_resources.resource_filename('CPACqc', 'templates')
-
-            # Copy only the index.html file from the templates directory to the QC output directory
-            src_file = os.path.join(templates_dir, 'index.html')
-            dest_file = os.path.join(args.qc_dir, 'index.html')
-            shutil.copy2(src_file, dest_file)
-
     except Exception as e:
         print(f"Error !! : {e}")
         return  # Exit the function if an error occurs
 
     not_plotted = main(args.bids_dir, args.qc_dir, args.config, args.sub, args.n_procs, args.pdf)
 
-    if not args.qc_dir:
-        if not args.html:
-            # remove the qc_dir if not generating HTML report
-            print(Fore.YELLOW + f"Removing the QC output directory: {args.qc_dir}")
-            print(Style.RESET_ALL)
-            shutil.rmtree(args.qc_dir)
-        else:
-            # combine all the csvs inside qc_dir/csv into one csv and name it results.csv
-            csv_dir = os.path.join(args.qc_dir, 'csv')
-            if os.path.exists(csv_dir):
-                # Combine all the csv files into one
-                combined_csv = os.path.join(args.qc_dir, 'results.csv')
-                combined_df = pd.concat(
-                    [pd.read_csv(os.path.join(csv_dir, f)) for f in os.listdir(csv_dir) if f.endswith('.csv') and os.path.getsize(os.path.join(csv_dir, f)) > 0]
-                )
-                combined_df.to_csv(combined_csv, index=False)
-            else:
-                print(Fore.RED + "No CSV files found in the QC output directory. Please check the log for details.")
-                print(Style.RESET_ALL)
-                return
-            # Rename the qc_dir to results
-            new_qc_dir = os.path.join(os.getcwd(), 'results')
-            print(Fore.YELLOW + f"Creating HTML report in results dir: {new_qc_dir}")
-            print(Style.RESET_ALL)
-            
-            # Check if the results directory already exists and remove it if it does
-            if os.path.exists(new_qc_dir):
-                shutil.rmtree(new_qc_dir)
-            
-            shutil.move(args.qc_dir, new_qc_dir)
-            print(Fore.YELLOW + "Done.")
+
+    if ".temp_qc" in args.qc_dir:
+        # remove the qc_dir if not generating HTML report
+        print(Fore.YELLOW + f"Removing the QC output directory: {args.qc_dir}")
+        print(Style.RESET_ALL)
+        shutil.rmtree(args.qc_dir)
+    else:
+        # combine all the csvs inside qc_dir/csv into one csv and name it results.csv
+        csv_dir = os.path.join(args.qc_dir, 'csv')
+        overlays_dir = os.path.join(args.qc_dir, 'overlays')
+        plots_dir = os.path.join(args.qc_dir, 'plots')
+        try:
+            shutil.rmtree(csv_dir, overlays_dir, plots_dir)
+        except Exception as e:
+            print(f"Error !! : {e}")
+            pass
 
     if len(not_plotted) > 0:
         print(Fore.RED + "Some files were not plotted. Please check the log for details.")

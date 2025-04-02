@@ -57,7 +57,7 @@ class Report:
 
     def get_pdf_path(self):
         pdf = f"{self.sub_ses}_qc_report.pdf"
-        if self.qc_dir:
+        if self.qc_dir and ".temp" not in self.qc_dir:
             return os.path.join(self.qc_dir, pdf)
         elif os.path.isabs(pdf):
             return pdf

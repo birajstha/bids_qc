@@ -19,28 +19,32 @@ import re
 from fnmatch import fnmatch
 
 def get_file_info(file_path):
-    img = nib.load(file_path)
-    resolution = tuple(float(x) for x in img.header.get_zooms())
-    dimension = tuple(int(x) for x in img.shape)
-    
-    affine = img.affine
-    orientation =  "".join(ornt2axcodes(io_orientation(affine))) + " @nibabel"
-    
-    if len(dimension) == 4:
-        # get TR info
-        tr = float(img.header.get_zooms()[3])
-        nos_tr = str(int(img.shape[-1]))
-    else:
-        tr = None
-        nos_tr = None
+    try:
+        img = nib.load(file_path)
+        resolution = tuple(float(x) for x in img.header.get_zooms())
+        dimension = tuple(int(x) for x in img.shape)
+        
+        affine = img.affine
+        orientation = "".join(ornt2axcodes(io_orientation(affine))) + " @nibabel"
+        
+        if len(dimension) == 4:
+            # get TR info
+            tr = float(img.header.get_zooms()[3])
+            nos_tr = str(int(img.shape[-1]))
+        else:
+            tr = None
+            nos_tr = None
 
-    return json.dumps({
-        "resolution": resolution,
-        "dimension": dimension,
-        "tr": tr,
-        "nos_tr": nos_tr,
-        "orientation": orientation
-    })
+        return json.dumps({
+            "resolution": resolution,
+            "dimension": dimension,
+            "tr": tr,
+            "nos_tr": nos_tr,
+            "orientation": orientation
+        })
+    except Exception as e:
+        logger.error(f"Error processing file {file_path}: {e}")
+        return None
 
 def gen_resource_name(row):
     sub = row["sub"]
