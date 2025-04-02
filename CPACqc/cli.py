@@ -37,8 +37,6 @@ def run():
         print(Fore.YELLOW + f"Output directory not specified. Saving output to {args.qc_dir}")
         print(Style.RESET_ALL)
 
-    if args.pdf is True:
-        args.pdf = "report"
 
     if args.config is not None:
         if not os.path.exists(args.config):
@@ -76,7 +74,7 @@ def run():
         print(f"Error !! : {e}")
         return  # Exit the function if an error occurs
 
-    not_plotted = main(args.bids_dir, args.qc_dir, args.config, args.sub, args.n_procs, args.pdf)
+    not_plotted = main(args.bids_dir, args.qc_dir, args.config, args.sub, args.n_procs)
 
 
     if ".temp_qc" in args.qc_dir:
@@ -85,15 +83,22 @@ def run():
         print(Style.RESET_ALL)
         shutil.rmtree(args.qc_dir)
     else:
-        # combine all the csvs inside qc_dir/csv into one csv and name it results.csv
+        # Combine all the CSVs inside qc_dir/csv into one CSV and name it results.csv
         csv_dir = os.path.join(args.qc_dir, 'csv')
         overlays_dir = os.path.join(args.qc_dir, 'overlays')
         plots_dir = os.path.join(args.qc_dir, 'plots')
-        try:
-            shutil.rmtree(csv_dir, overlays_dir, plots_dir)
-        except Exception as e:
-            print(f"Error !! : {e}")
-            pass
+        
+        # List of directories to remove
+        dirs_to_remove = [csv_dir, overlays_dir, plots_dir]
+        
+        for directory in dirs_to_remove:
+            try:
+                shutil.rmtree(directory)
+            except FileNotFoundError:
+                # Skip if the directory does not exist
+                continue
+            except Exception as e:
+                print(f"Error removing directory {directory}: {e}")
 
     if len(not_plotted) > 0:
         print(Fore.RED + "Some files were not plotted. Please check the log for details.")

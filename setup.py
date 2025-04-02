@@ -36,6 +36,6 @@ setup(
     },
     include_package_data=True,
     package_data={
-        'CPACqc': ['templates/index.html', 'overlay/overlay.csv'],
+        'CPACqc': ['overlay/overlay.csv'],
     },
 )

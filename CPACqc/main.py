@@ -10,7 +10,7 @@ from CPACqc.multiprocessing.multiprocessing_utils import run_multiprocessing
 from CPACqc.logging.log import logger
 from CPACqc.report.pdf import Report
 
-def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8, pdf=False):
+def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8):
     os.makedirs(qc_dir, exist_ok=True)
     
     logger.info(f"Running QC with nprocs {n_procs}...")
@@ -96,16 +96,14 @@ def main(bids_dir, qc_dir, config=False, sub=None, n_procs=8, pdf=False):
         not_plotted += run_multiprocessing(run_wrapper, args, n_procs)
 
 
+        try:
+            report.df = result_df
+            report.generate_report()
+            Report.destroy_instance()
 
-        if pdf:
-            try:
-                report.df = result_df
-                report.generate_report()
-                Report.destroy_instance()
-
-            except Exception as e:
-                logger.error(f"Error generating PDF: {e}")
-                print(Fore.RED + f"Error generating PDF: {e}" + Style.RESET_ALL)
+        except Exception as e:
+            logger.error(f"Error generating PDF: {e}")
+            print(Fore.RED + f"Error generating PDF: {e}" + Style.RESET_ALL)
 
     return not_plotted
     
@@ -120,7 +118,6 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--sub", nargs='+', required=False, help="Specify subject/participant label(s) to process")
     parser.add_argument("-n", "--n_procs", type=int, default=8, help="Number of processes to use for multiprocessing")
     parser.add_argument("-v", "--version", action='version', version=f'%(prog)s {__version__}', help="Show the version number and exit")
-    parser.add_argument("-pdf", "--pdf", required=False, help="Generate PDF report")
 
     args = parser.parse_args()
-    main(args.bids_dir, args.qc_dir, args.config, args.sub, args.n_procs, args.pdf)
+    main(args.bids_dir, args.qc_dir, args.config, args.sub, args.n_procs)
