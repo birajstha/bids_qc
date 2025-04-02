@@ -6,15 +6,13 @@
 ![PDF report](https://raw.githubusercontent.com/birajstha/bids_qc/main/static/cpac-qc_pdf.png)
 example PDF report here: [PDF REPORT](https://github.com/birajstha/bids_qc/raw/main/static/sub-PA001_ses-V1W1_qc_report.pdf)
 
-### HTML Report
-![CPAC-QC](https://raw.githubusercontent.com/birajstha/bids_qc/main/static/cpac-qc.png)
 
 ## Overview
 
 The CPAC-qc Plotting App is a tool designed to generate quality control plots for the CPAC (Configurable Pipeline for the Analysis of Connectomes) outputs. This app helps in visualizing and assessing the quality of neuroimaging data processed through CPAC.
 
 ## Updates
-- Outputs PDF (default) and HTML report (with -html flag) now.
+- Outputs only PDF report now.
 - [Default config](https://github.com/birajstha/bids_qc/raw/main/CPACqc/overlay/overlay.csv) has overlays.
 - Images on PDF report will follow the order mentioned in overlay.csv provided or default.
 - Added Bookmarks on PDF report for easy navigation.
@@ -25,7 +23,6 @@ The CPAC-qc Plotting App is a tool designed to generate quality control plots fo
 ## Requirements
 
 - BIDS dir with `.nii.gz` images in it.
-- (Optional) A html viewing tool or extension
 - PDF viewer
 
 ## Installation
@@ -45,15 +42,12 @@ cpacqc -d bids_dir
 
 This will output a pdf report `report.pdf` in your current directory.
 
-
-2. **HTML report**
+2. **Providing output dir**
 
 ```bash
-cpacqc -d bids_dir -html
+cpacqc -d bids_dir -o output_dir
 ```
-
-This will create a pdf `report.pdf` along with a `results` dir with HTML report `index.html` and related files.
-
+output_dir will be created if not available. Make sure to have write permissions.
 
 3. **Running single/multiple Subjects**
 
@@ -64,23 +58,16 @@ cpacqc -d bids_dir -s subject-id_1 subject-id_2
 You can hand pick a single or a multiple subjects with `-s` flag
 
 
-4. **Running with defined number of procs**
+4. **With defined number of procs**
 
 ```bash
-cpacqc -d path/to/bids_dir  -n number-of-procs
+cpacqc -d bids_dir  -n number-of-procs
 ```
 
 Note: if -n is not provided default is 8
 
 
-5. **Running all Subjects in the dir**
-
-```bash
-cpacqc -d /bids_dir 
-```
-
-
-6. **Providing Overlays config**
+5. **Providing custom Overlays config**
 
 ```bash
 cpacqc -d path/to/bids_dir -c ./overlay.csv
