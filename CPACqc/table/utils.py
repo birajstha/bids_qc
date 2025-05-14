@@ -49,17 +49,28 @@ def get_file_info(file_path):
 def gen_resource_name(row):
     sub = row["sub"]
     ses = row["ses"] if row["ses"] != "" else False
-
     sub_ses = f"sub-{sub}_ses-{ses}" if ses else f"sub-{sub}"
 
-    task = row["task"] if row["task"] != "" else False
-    run = row["run"] if row["run"] != "" else False
-    
-    # Create a flexible pattern for the scan part
-    scan = f"task-{task}_run-\\d*_" if task and run else ""
-    
-    # Use regular expression to replace the pattern
-    pattern = re.escape(f"{sub_ses}_") + scan
+    # Handle task, run, acq flexibly
+    task = row.get("task", "") or ""
+    run = row.get("run", "") or ""
+    acq = row.get("acq", "") or ""
+
+    # Build scan pattern based on available fields
+    scan_parts = []
+    if task:
+        scan_parts.append(f"task-{task}")
+    if acq:
+        scan_parts.append(f"acq-{acq}")
+    if run:
+        scan_parts.append(f"run-{run}")
+
+    scan_pattern = "_".join(scan_parts)
+    if scan_pattern:
+        scan_pattern += "_"
+
+    # Build regex pattern to remove from file_name
+    pattern = re.escape(f"{sub_ses}_") + scan_pattern
     resource_name = re.sub(pattern, "", row["file_name"])
     return resource_name
 

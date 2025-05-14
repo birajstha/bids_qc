@@ -15,9 +15,6 @@ def preprocess(df):
     df = df.fillna("")
 
     files = ["nii.gz", ".nii"]
-    # Drop json column if it exists
-    if "json" in df.columns:
-        df = df.drop(columns=["json"])
 
     # Filter rows where file_path ends with .nii.gz or .nii
     nii_gz_files = df[df.file_path.str.endswith(tuple(files))].copy()
