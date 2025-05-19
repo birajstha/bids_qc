@@ -2,7 +2,7 @@
 
 import argparse
 from colorama import Fore, Style
-from CPACqc.core.main import main
+from CPACqc.core.QCPipeline import QCPipeline
 from CPACqc.core.validation import validate_args
 from CPACqc import __version__, __author__, __email__, __description__
 
@@ -37,7 +37,9 @@ def run():
         print(Fore.RED + str(e) + Style.RESET_ALL)
         return
     
-    main(args)
+    pipeline = QCPipeline(args)
+    pipeline.run()
+
 
 if __name__ == "__main__":
     run()

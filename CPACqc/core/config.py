@@ -4,7 +4,7 @@ from datetime import datetime
 import os
 import pandas
 
-from CPACqc.utils.logging.log import FileLogger
+from CPACqc.core.logger import logger
 
 @dataclass
 class Config:
@@ -13,7 +13,7 @@ class Config:
     subject_list: Optional[List[str]] = None
     n_procs: int = 8
 
-    logger: FileLogger = field(init=False)
+    logger = logger 
     overlay_csv: Optional[str] = None
 
     plots_dir: str = field(init=False)
@@ -21,9 +21,6 @@ class Config:
     csv_dir: str = field(init=False)
 
     def __post_init__(self):
-        log_file = f"cpacqc_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
-        self.logger = FileLogger(name="CPACqc", filename=log_file)
-
         if not self.overlay_csv:
             self.overlay_csv = os.path.join(os.path.dirname(__file__), "..", "utils", "overlay", "overlay.csv")
 

@@ -1,4 +1,7 @@
 
+import nibabel as nib
+import numpy as np
+from nilearn.plotting import plot_stat_map
 
 def plot_nii_overlay(in_nii, plot_loc, background=None, volume=None, cmap='viridis', title=None, alpha=0.8, threshold=20):
     im = nib.load(in_nii)

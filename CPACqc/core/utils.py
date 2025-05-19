@@ -11,14 +11,13 @@ import nibabel as nib
 from nibabel.orientations import io_orientation, ornt2axcodes
 from colorama import Fore, Style, init
 
-from CPACqc.utils.plotting.plot import run
-from CPACqc.utils.logging.log import ConsoleLogger 
-
 import json
 import re
 from fnmatch import fnmatch
 
-logger = ConsoleLogger(name="CPACqc")
+import ast
+from CPACqc.core.logger import logger
+
 
 def make_dir(path) -> None: 
     """
@@ -247,9 +246,6 @@ def create_result_row(res1_row, res2_row, file_name, plots_dir, plot_path):
         "scan": res1_row["scan"]
     }
 
-def run_wrapper(args):
-    return run(*args)
-
 def fill_space(row):
     if row["space"] == "":
         if row["datatype"] == "anat":
@@ -257,3 +253,70 @@ def fill_space(row):
         elif row["datatype"] == "func":
             return "bold"
     return row["space"]
+
+
+
+KEYS_TO_REMOVE = {"CpacConfig", "CpacProvenance", "CpacConfigHash"}
+
+def remove_keys(d, keys_to_remove):
+    if isinstance(d, dict):
+        return {k: remove_keys(v, keys_to_remove)
+                for k, v in d.items() if k not in keys_to_remove}
+    elif isinstance(d, list):
+        return [remove_keys(i, keys_to_remove) for i in d]
+    return d
+
+def parse_json_column(val):
+    """
+    Parse a JSON column value into a cleaned Python dict.
+    Handles nested dicts/lists and removes unwanted keys.
+    """
+    try:
+        # Try to parse string to dict/list
+        if isinstance(val, str):
+            parsed = ast.literal_eval(val)
+        else:
+            parsed = val
+        cleaned = remove_keys(parsed, KEYS_TO_REMOVE)
+        return cleaned  # returns a dict or list, not a string
+    except Exception as e:
+        print(f"Error parsing JSON column: {e}")
+        return {}
+
+
+def flatten_json_collapse_lists(d, parent_key='', sep='.'):
+    """
+    Flatten a nested dict for display, collapsing lists into comma-separated strings.
+    """
+    items = []
+    if isinstance(d, dict):
+        for k, v in d.items():
+            new_key = f"{parent_key}{sep}{k}" if parent_key else k
+            if isinstance(v, dict):
+                items.extend(flatten_json_collapse_lists(v, new_key, sep=sep).items())
+            elif isinstance(v, list):
+                # Collapse list to comma-separated string if not list of dicts
+                if all(not isinstance(i, dict) for i in v):
+                    items.append((new_key, ", ".join(str(i) for i in v)))
+                else:
+                    # If list of dicts, flatten each dict
+                    for idx, item in enumerate(v):
+                        items.extend(flatten_json_collapse_lists(item, f"{new_key}[{idx}]", sep=sep).items())
+            else:
+                items.append((new_key, v))
+    else:
+        items.append((parent_key, d))
+    return dict(items)
+
+def clean_and_flatten_json_column(val):
+    """
+    Parse, clean (remove unwanted keys), and flatten the JSON column value into a 1-level dict,
+    collapsing lists into comma-separated strings.
+    """
+    try:
+        cleaned = parse_json_column(val)
+        flat = flatten_json_collapse_lists(cleaned)
+        return flat  # returns a flat dict
+    except Exception as e:
+        print(f"Error cleaning and flattening JSON column: {e}")
+        return {}

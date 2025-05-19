@@ -11,7 +11,15 @@ class Table:
     
     original_table:Optional[pandas.DataFrame]
     processed_table:Optional[pandas.DataFrame] = field(init=False)
-    
+    all_columns = ['dataset', 'dataset_type', 'dataset_path', 'dataset_description', 'sub',
+       'ses', 'datatype', 'suffix', 'ext', 'extra_entities', 'sample', 'task',
+       'tracksys', 'acq', 'nuc', 'voi', 'ce', 'trc', 'stain', 'rec', 'dir',
+       'run', 'mod', 'echo', 'flip', 'inv', 'mt', 'part', 'proc', 'hemi',
+       'space', 'split', 'recording', 'chunk', 'seg', 'res', 'den', 'label',
+       'desc', 'json', 'file_path', 'link_target', 'mod_time', 'file_name',
+       'resource_name', 'sub_ses', 'scan']
+    columns_to_keep = ['sub', 'ses', 'file_path', 'file_name', 'resource_name', 'datatype', 'space', 'scan', 'json']
+
     def __post_init__(self):
         """
         Initialize the Table class and preprocess the original table.
@@ -68,3 +76,21 @@ class Table:
 
         self.processed_table = nii_gz_files
 
+
+@dataclass
+class Resource:
+    """
+    Class to represent a resource in the table.
+    """
+    sub: str
+    ses: str
+    file_path: str
+    file_name: str
+    resource_name: str
+    datatype: str
+    space: str
+    scan: str
+    json: Optional[str] = None
+
+    
+    

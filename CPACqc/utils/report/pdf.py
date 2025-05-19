@@ -1,7 +1,6 @@
-from CPACqc.utils.report.utils import *
 import pandas as pd
 from fnmatch import fnmatch
-from CPACqc.utils.logging.log import FileLogger as logger
+from CPACqc.core.logger import logger
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
@@ -225,7 +224,7 @@ class Report(ReportGeneratorService):
             img = ImageReader(image_path)
             max_img_width = self.width - 20
             max_img_height = self.height - 100
-
+    
             img_width, img_height = img.getSize()
             aspect_ratio = img_width / img_height
             if aspect_ratio > 1:
@@ -234,58 +233,118 @@ class Report(ReportGeneratorService):
             else:
                 img_height = max_img_height
                 img_width = img_height * aspect_ratio
-
+    
             if y_position - img_height - 140 < 0:
                 self.add_footer(page_number)
                 page_number += 1
                 y_position = self.height - 30
                 self.add_header(chapter, scan)
-
+    
             self.pdf_canvas.setFont("Helvetica", 15)
             self.pdf_canvas.drawString(10, y_position - 20, f"{image_data['resource_name']}")
             self.pdf_canvas.bookmarkPage(f"image_{chapter}_{scan}_{image_data['resource_name']}")
-
+    
             self.pdf_canvas.drawImage(img, (self.width - img_width) / 2, y_position - img_height - 40, width=img_width, height=img_height)
-
-            label = f"{image_data['file_name']}"
-            self.styles['Normal'].textColor = colors.whitesmoke
-            wrapped_label = Paragraph(label, self.styles['Normal'])
-            wrapped_label.wrapOn(self.pdf_canvas, self.width - 20, self.height)
-
-            file_info = json.loads(image_data['file_info'])
-            file_info_text = [
-                ["Image:", wrapped_label],
-                ["Orientation:", file_info['orientation']],
-                ["Dimensions:", " x ".join(map(str, file_info['dimension']))],
-                ["Resolution:", " x ".join(map(lambda x: str(round(x, 2)), file_info['resolution']))]
-            ]
-
-            if file_info['tr'] is not None:
-                file_info_text.append(["TR:", str(round(file_info['tr'], 2))])
-
-            if file_info['nos_tr'] is not None:
-                file_info_text.append(["No of TRs:", str(file_info['nos_tr'])])
-
-            table = Table(file_info_text, colWidths=[80, self.width - 100])
-            table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.darkgreen),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, -1), 10),
-                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                ('BACKGROUND', (0, 1), (-1, -1), colors.lightgrey),
-                ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
-                ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ]))
-            table.wrapOn(self.pdf_canvas, self.width - 20, self.height)
-            table_height = table.wrap(self.width - 20, self.height)[1]
-            table.drawOn(self.pdf_canvas, 10, y_position - img_height - table_height - 60)
-
-            y_position -= img_height + table_height + 70
-            
+    
+            # Draw image details table
+            table_height = self.add_image_details(image_data, y_position, img_height)
+    
+            # Draw JSON details table below image details
+            json_table_height = self.add_json_details(image_data, y_position - img_height - table_height - 80)
+    
+            y_position -= img_height + table_height + json_table_height + 90
+    
             self.pdf_canvas.showPage()
         return y_position, page_number
+    
+    def add_image_details(self, image_data, y_position, img_height):
+
+        label = f"{image_data['file_name']}"
+        self.styles['Normal'].textColor = colors.whitesmoke
+        wrapped_label = Paragraph(label, self.styles['Normal'])
+        wrapped_label.wrapOn(self.pdf_canvas, self.width - 20, self.height)
+    
+        file_info = json.loads(image_data['file_info'])
+        file_info_text = [
+            ["Image:", wrapped_label],
+            ["Orientation:", file_info['orientation']],
+            ["Dimensions:", " x ".join(map(str, file_info['dimension']))],
+            ["Resolution:", " x ".join(map(lambda x: str(round(x, 2)), file_info['resolution']))]
+        ]
+    
+        if file_info['tr'] is not None:
+            file_info_text.append(["TR:", str(round(file_info['tr'], 2))])
+    
+        if file_info['nos_tr'] is not None:
+            file_info_text.append(["No of TRs:", str(file_info['nos_tr'])])
+    
+        table = Table(file_info_text, colWidths=[80, self.width - 100])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.darkgreen),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.lightgrey),
+            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ]))
+        table.wrapOn(self.pdf_canvas, self.width - 20, self.height)
+        table_height = table.wrap(self.width - 20, self.height)[1]
+        table.drawOn(self.pdf_canvas, 10, y_position - img_height - table_height - 60)
+        return table_height
+    
+    def add_json_details(self, image_data, y_position):
+        flat_json = image_data.get('json', None)
+        if flat_json is None or flat_json == '' or flat_json == {}:
+            print(Fore.YELLOW + f"JSON data is empty for {image_data.get('file_name', '')}. Skipping..." + Style.RESET_ALL)
+            return 0
+    
+        # If already a dict, skip json.loads
+        if isinstance(flat_json, str):
+            try:
+                flat_json = json.loads(flat_json)
+            except Exception as e:
+                print(Fore.YELLOW + f"Could not parse JSON for {image_data.get('file_name', '')}: {e}" + Style.RESET_ALL)
+                return 0
+    
+        if not flat_json or flat_json == {}:
+            print(Fore.YELLOW + f"JSON data is empty for {image_data.get('file_name', '')}. Skipping..." + Style.RESET_ALL)
+            return 0
+    
+        # Add header row
+        json_text = [["Json Field", "Value"]]
+        for key, value in flat_json.items():
+            # Skip empty keys or NaN values
+            if not key or (isinstance(value, float) and pd.isna(value)):
+                continue
+            # Ensure value text is black
+            self.styles['Normal'].textColor = colors.black
+            para_value = Paragraph(str(value), self.styles['Normal'])
+            json_text.append([f"{key}:", para_value])
+    
+        if len(json_text) == 1:
+            print(Fore.YELLOW + f"JSON data is empty for {image_data.get('file_name', '')}. Skipping..." + Style.RESET_ALL)
+            return 0
+    
+        table = Table(json_text, colWidths=[80, self.width - 100])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.lightgrey),
+            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ]))
+        table.wrapOn(self.pdf_canvas, self.width - 20, self.height)
+        table_height = table.wrap(self.width - 20, self.height)[1]
+        table.drawOn(self.pdf_canvas, 10, y_position - table_height)
+        return table_height + 10  # Add 10 for spacing
+
 
     def add_header(self, chapter, scan):
         self.pdf_canvas.setFont("Helvetica", 12)

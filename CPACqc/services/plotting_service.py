@@ -4,7 +4,7 @@ from typing import Dict, Any, List, Optional
 class PlottingService(ABC):
 
     @abstractmethod
-    def plot(self, sub, ses, file_path_1, file_path_2, file_name, plots_dir, plot_path)
+    def plot_overlay(self, sub, ses, file_path_1, file_path_2, file_name, plots_dir, plot_path):
         """
         Abstract method to plot data.
         
