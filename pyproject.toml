@@ -75,7 +75,7 @@ dependencies = [
 ]
 
 name = "CPACqc"
-version = "0.2.16"
+version = "0.2.17"
 description = "A BIDS QC report generator"
 readme = "README.md"
 requires-python = ">=3.12"
