@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CPAC - QC Dashboard</title>
+    <!-- Include Bootstrap CSS -->
+    <link
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- Include D3.js library -->
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+      }
+
+      .fixed-sidebar {
+        height: 100vh;
+        position: fixed;
+        top: 0;
+        overflow-y: auto;
+        padding-top: 20px;
+        background-color: #f8f9fa;
+        z-index: 1000;
+      }
+
+      .fixed-sidebar .overflow-auto {
+        overflow-y: auto;
+      }
+
+      #imageSelectionSidebar {
+        right: 0;
+      }
+
+      .sticky-logo {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        padding: 10px 0;
+        z-index: 1000;
+      }
+
+      .sticky-title {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        padding: 10px 0;
+        z-index: 1000;
+      }
+
+      .sticky-search-bar {
+        position: -webkit-sticky; /* For Safari */
+        position: sticky;
+        top: 0;
+        z-index: 1000; /* Ensure it stays on top of other elements */
+        background-color: white; /* Optional: to ensure it doesn't blend with the background */
+      }
+
+      .img-fluid {
+        max-width: 100%;
+        height: auto;
+      }
+
+      .container-fluid {
+        padding: 0;
+      }
+
+      .container {
+        padding: 0 5px;
+      }
+
+      .row {
+        margin: 0;
+      }
+
+      .col-md-6,
+      .col-12 {
+        padding: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row">
+        <!-- Sidebar -->
+        <nav class="col-md-2 col-12 fixed-sidebar bg-light">
+          <div class="text-center sticky-logo">
+            <img
+              src="https://avatars.githubusercontent.com/u/2230402?s=200&v=4"
+              alt="Logo"
+              class="img-fluid my-3"
+            />
+            <small class="d-block">&copy; 2025 CPAC developers</small>
+          </div>
+          <ul
+            class="nav flex-column nav-pills"
+            id="subjectTabs"
+            role="tablist"
+          ></ul>
+        </nav>
+
+        <!-- Main content -->
+        <div class="col-md-8 col-12 offset-md-2">
+          <h4 class="mt-4 sticky-title text-center" id="title">
+            QC REPORT
+          </h4>
+          <hr />
+          <div class="tab-content" id="tabContentContainer"></div>
+        </div>
+
+        <!-- Sidebar for image selection -->
+        <div
+          class="col-md-2 col-12 fixed-sidebar bg-light d-flex flex-column"
+          id="imageSelectionSidebar"
+        >
+          <h5 class="text-center bg-warning text-white p-2">Select Images</h5>
+          <div class="flex-grow-1 overflow-auto">
+            <form id="imageSelectionForm">
+              <!-- Checkboxes will be added here -->
+            </form>
+          </div>
+          <div class="btn-group" role="group">
+            <button
+              type="button"
+              class="btn btn-secondary container"
+              id="selectAllButton"
+            >
+              Select All
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary container"
+              id="deselectAllButton"
+            >
+              Deselect All
+            </button>
+          </div>
+          <button
+            type="button"
+            class="btn btn-success btn-block mt-2"
+            id="applySelectionButton"
+          >
+            Apply
+          </button>
+          <div
+            id="noSelectionMessage"
+            style="display: none; color: red; margin-top: 10px"
+          >
+            Select an image or none selected
+          </div>
+          <button
+            type="button"
+            class="btn btn-info btn-block mt-2"
+            id="generatePdfButton"
+          >
+            Generate PDF
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JavaScript (popper.js and bootstrap.min.js) -->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var subjectTabs = document.getElementById("subjectTabs");
+        var tabContentContainer = document.getElementById(
+          "tabContentContainer"
+        );
+        var activeSubject = null;
+        var selectedImageNames = [];
+        var subjects = [];
+        var csvData = []; // Define csvData to store the CSV content
+        var imageMap = {}; // Define imageMap in the correct scope
+
+        var csvPath = "results.csv";
+        d3.csv(csvPath).then(function (csv) {
+          csvData = csv; // Store the CSV content in csvData
+
+          // Extract unique subjects from the CSV data and sort them
+          subjects = Array.from(new Set(csv.map((d) => d.sub))).sort();
+
+          subjects.forEach(function (subject, index) {
+            var tab = document.createElement("li");
+            tab.className = "nav-item";
+            var tabIndex = index === 0 ? "active" : "";
+            tab.innerHTML = `<a class="nav-link ${tabIndex}" id="${subject}-tab" data-toggle="tab" href="#${subject}" role="tab" aria-controls="${subject}" aria-selected="true">${subject}</a>`;
+            subjectTabs.appendChild(tab);
+
+            var tabContent = document.createElement("div");
+            tabContent.className = `tab-pane fade ${tabIndex}`;
+            tabContent.id = subject;
+            tabContentContainer.appendChild(tabContent);
+
+            tab.addEventListener("click", function () {
+              if (activeSubject !== subject) {
+                openTab(subject);
+              }
+            });
+
+            if (index === 0) {
+              activeSubject = subject;
+            }
+          });
+
+          // Open the first tab by default
+          if (subjects.length > 0) {
+            openTab(subjects[0]);
+          }
+
+          var allImages = Array.from(
+            new Set(
+              csv.map((d) =>
+                d.relative_path.split("/").pop().replace(".png", "")
+              )
+            )
+          ).sort();
+          var form = document.getElementById("imageSelectionForm");
+
+          // Add search bar
+          var searchBar = document.createElement("input");
+          searchBar.type = "text";
+          searchBar.id = "imageSearchBar";
+          searchBar.className = "form-control sticky-search-bar";
+          searchBar.placeholder = "Search images...";
+          form.appendChild(searchBar);
+
+          var labelCounts = {};
+
+          allImages.forEach(function (imageName) {
+            // Extract the last part of the image name, skipping sub, ses, task, run parts if they exist
+            var parts = imageName.split("_");
+            var shortLabel = parts
+              .filter(
+                (part) =>
+                  !["sub", "ses", "task", "run"].some((prefix) =>
+                    part.startsWith(prefix)
+                  )
+              )
+              .join("_");
+
+            if (!labelCounts[shortLabel]) {
+              labelCounts[shortLabel] = 0;
+              imageMap[shortLabel] = [];
+            }
+            labelCounts[shortLabel]++;
+            imageMap[shortLabel].push(imageName);
+          });
+
+          Object.keys(labelCounts).forEach(function (shortLabel) {
+            var count = labelCounts[shortLabel];
+            var checkbox = document.createElement("div");
+            checkbox.className = "form-check";
+            checkbox.innerHTML = `
+                  <input class="form-check-input" type="checkbox" value="${shortLabel}" id="${shortLabel}" checked>
+                  <label class="form-check-label" for="${shortLabel}">
+                      ${shortLabel} (${count})
+                  </label>`;
+            form.appendChild(checkbox);
+
+            // Add event listener to the label to mark all checkboxes with the same short label
+            checkbox
+              .querySelector("label")
+              .addEventListener("click", function () {
+                var checkboxes = document.querySelectorAll(
+                  "#imageSelectionForm input[type='checkbox']"
+                );
+                checkboxes.forEach(function (cb) {
+                  var cbShortLabel = cb.value
+                    .split("_")
+                    .filter(
+                      (part) =>
+                        !["sub", "ses", "task", "run"].some((prefix) =>
+                          part.startsWith(prefix)
+                        )
+                    )
+                    .join("_");
+                  if (cbShortLabel === shortLabel) {
+                    cb.checked = !cb.checked;
+                  }
+                });
+              });
+          });
+
+          // Add event listener to the search bar
+          searchBar.addEventListener("input", function () {
+            var searchText = searchBar.value.toLowerCase();
+            document
+              .querySelectorAll("#imageSelectionForm .form-check")
+              .forEach(function (checkbox) {
+                var label = checkbox
+                  .querySelector("label")
+                  .textContent.toLowerCase();
+                if (label.includes(searchText)) {
+                  checkbox.style.display = "block";
+                } else {
+                  checkbox.style.display = "none";
+                }
+              });
+          });
+
+          // Add event listener to the apply button in the sidebar
+          document
+            .getElementById("applySelectionButton")
+            .addEventListener("click", function () {
+              // Deselect hidden checkboxes
+              document
+                .querySelectorAll("#imageSelectionForm .form-check")
+                .forEach(function (checkbox) {
+                  if (checkbox.style.display === "none") {
+                    checkbox.querySelector("input").checked = false;
+                  }
+                });
+
+              selectedImageNames = Array.from(
+                document.querySelectorAll("#imageSelectionForm input:checked")
+              ).flatMap((input) => imageMap[input.value]);
+              if (selectedImageNames.length === 0) {
+                document.getElementById("noSelectionMessage").style.display =
+                  "block";
+              } else {
+                document.getElementById("noSelectionMessage").style.display =
+                  "none";
+                filterImagesByImageNames(
+                  selectedImageNames,
+                  csvData,
+                  activeSubject
+                );
+              }
+            });
+
+          // Add event listeners for select all and deselect all buttons
+          document
+            .getElementById("selectAllButton")
+            .addEventListener("click", function () {
+              document
+                .querySelectorAll("#imageSelectionForm input[type='checkbox']")
+                .forEach(function (checkbox) {
+                  checkbox.checked = true;
+                });
+            });
+
+          document
+            .getElementById("deselectAllButton")
+            .addEventListener("click", function () {
+              document
+                .querySelectorAll("#imageSelectionForm input[type='checkbox']")
+                .forEach(function (checkbox) {
+                  checkbox.checked = false;
+                });
+            });
+        });
+
+        function openTab(tabName) {
+          var tabs = document.querySelectorAll(".tab-pane");
+
+          for (var i = 0; i < tabs.length; i++) {
+            tabs[i].classList.remove("show", "active");
+          }
+
+          var tabContent = document.getElementById(tabName);
+          if (tabContent) {
+            tabContent.classList.add("show", "active");
+            tabContent.innerHTML = "";
+            console.log("Opening tab:", tabName);
+
+            activeSubject = tabName;
+
+            var csvPath = "results.csv";
+            d3.csv(csvPath).then(function (csv) {
+              if (Array.isArray(csv)) {
+                var uniqueSesScanReg = Array.from(
+                  new Set(
+                    csv.filter((d) => d.sub == tabName).map((d) => `${d.ses}`)
+                  )
+                ).sort();
+
+                // Loop over the uniqueSesScanReg and create a row for each
+                for (var i = 0; i < uniqueSesScanReg.length; i++) {
+                  var rowContainer = document.createElement("div");
+                  rowContainer.className = "row";
+
+                  var sesScanReg = uniqueSesScanReg[i];
+                  var images = csv
+                    .filter((d) => d.sub == tabName && d.ses == sesScanReg)
+                    .sort((a, b) => a.file_name.localeCompare(b.file_name));
+
+                  images.forEach(function (imageData) {
+                    var imageName = imageData.file_name;
+                    var imagePath = `./${imageData.relative_path}`;
+                    var fileInfo = JSON.parse(imageData.file_info);
+
+                    // Function to format numbers to 2 decimal places
+                    function formatNumber(num) {
+                      return num.toFixed(2);
+                    }
+
+                    var imageContainer = document.createElement("div");
+                    imageContainer.className = "col-lg-4 col-md-6 col-sm-12";
+                    imageContainer.innerHTML = `
+                      <div class="card mb-4 h-100 d-flex flex-column">
+                        <img src="${imagePath}" class="card-img-top img-fluid" onerror="this.onerror=null; this.src=''; console.error('Image not found:', '${imagePath}');" />
+                        <div class="card-body d-flex flex-column">
+                          <h6 class="card-title">${imageName}</h6>
+                          <p class="card-text">
+                            Orientation: ${fileInfo.orientation}<br>
+                            Dimensions: ${fileInfo.dimension.join(" x ")}<br>
+                            Resolution: ${fileInfo.resolution
+                              .map(formatNumber)
+                              .join(" x ")}<br>
+                            ${
+                              fileInfo.tr !== null
+                                ? `TR: ${formatNumber(fileInfo.tr)}<br>`
+                                : ""
+                            }
+                            ${
+                              fileInfo.nos_tr !== null
+                                ? `No. of TRs: ${fileInfo.nos_tr}`
+                                : ""
+                            }
+                          </p>
+                        </div>
+                      </div>`;
+                    rowContainer.appendChild(imageContainer);
+                  });
+
+                  // Append rowContainer to tabContent
+                  tabContent.appendChild(rowContainer);
+                }
+
+                // Reapply the filter if images are selected
+                if (selectedImageNames.length > 0) {
+                  filterImagesByImageNames(
+                    selectedImageNames,
+                    csv,
+                    activeSubject
+                  );
+                }
+              } else {
+                console.error("CSV data is not an array:", csv);
+              }
+            });
+          } else {
+            console.error(`Tab content with ID ${tabName} not found.`);
+          }
+        }
+
+        function filterImagesByImageNames(imageNames, csv, subject) {
+          var tabContent = document.getElementById(subject);
+          if (tabContent) {
+            tabContent.innerHTML = "";
+
+            var filteredImages;
+            if (imageNames.length === 0) {
+              filteredImages = csv.filter((d) => d.sub === subject);
+            } else {
+              filteredImages = csv.filter(
+                (d) =>
+                  imageNames.includes(
+                    d.relative_path.split("/").pop().replace(".png", "")
+                  ) && d.sub === subject
+              );
+            }
+
+            var rowContainer = document.createElement("div");
+            rowContainer.className = "row";
+
+            filteredImages.forEach(function (imageData) {
+              var imageName = imageData.file_name;
+              var imagePath = `./${imageData.relative_path}`;
+              var fileInfo = JSON.parse(imageData.file_info);
+
+              // Function to format numbers to 2 decimal places
+              function formatNumber(num) {
+                return num.toFixed(2);
+              }
+
+              var imageContainer = document.createElement("div");
+              imageContainer.className = "col-lg-4 col-md-6 col-sm-12";
+              imageContainer.innerHTML = `
+                <div class="card mb-4 h-100 d-flex flex-column">
+                  <img src="${imagePath}" class="card-img-top img-fluid" onerror="this.onerror=null; this.src=''; console.error('Image not found:', '${imagePath}');" />
+                  <div class="card-body d-flex flex-column">
+                    <h6 class="card-title">${imageName}</h6>
+                    <p class="card-text">
+                      Orientation: ${fileInfo.orientation}<br>
+                      Dimensions: ${fileInfo.dimension.join(" x ")}<br>
+                      Resolution: ${fileInfo.resolution
+                        .map(formatNumber)
+                        .join(" x ")}<br>
+                      ${
+                        fileInfo.tr !== null
+                          ? `TR: ${formatNumber(fileInfo.tr)}<br>`
+                          : ""
+                      }
+                      ${
+                        fileInfo.nos_tr !== null
+                          ? `No. of TRs: ${fileInfo.nos_tr}`
+                          : ""
+                      }
+                    </p>
+                  </div>
+                </div>`;
+              rowContainer.appendChild(imageContainer);
+            });
+
+            tabContent.appendChild(rowContainer);
+          } else {
+            console.error(`Tab content with ID ${subject} not found.`);
+          }
+        }
+
+        // Add event listener to the generate PDF button
+        document
+          .getElementById("generatePdfButton")
+          .addEventListener("click", function () {
+            generatePdf();
+          });
+
+        function generatePdf() {
+          // Create a notification element
+          const notification = document.createElement("div");
+          notification.id = "pdfNotification";
+          notification.style.position = "fixed";
+          notification.style.top = "10px";
+          notification.style.right = "10px";
+          notification.style.padding = "10px";
+          notification.style.backgroundColor = "#f0f0f0";
+          notification.style.border = "1px solid #ccc";
+          notification.style.zIndex = "1000";
+          notification.innerText = "Generating PDF, please wait...";
+          document.body.appendChild(notification);
+
+          // Simulate the apply button click to ensure selected images are set
+          selectedImageNames = Array.from(
+            document.querySelectorAll("#imageSelectionForm input:checked")
+          ).flatMap((input) => imageMap[input.value]);
+          if (selectedImageNames.length === 0) {
+            notification.innerText =
+              "Please select images before generating the PDF.";
+            return;
+          }
+
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF();
+
+          // Add CPAC logo and description to the front page
+          const logoImg = new Image();
+          logoImg.src =
+            "https://avatars.githubusercontent.com/u/2230402?s=200&v=4"; // Adjust the path as needed
+
+          logoImg.onload = function () {
+            doc.addImage(logoImg, "PNG", 10, 10, 50, 50); // Adjust the size as needed
+            doc.setFontSize(20);
+            doc.text("CPAC Quality Control Report", 70, 30);
+            doc.setFontSize(12);
+
+            // Add an initial page to skip the first page
+            doc.addPage();
+
+            let yPosition = 30; // Start at the top of the new page
+
+            // Get unique subjects and sort them in ascending order
+            const subjects = Array.from(
+              new Set(csvData.map((d) => d.sub))
+            ).sort();
+
+            // Add all selected images to the PDF, grouped by subject
+            const imagePromises = subjects.map((subject) => {
+              return new Promise((resolveSubject) => {
+                const subjectImages = csvData.filter(
+                  (d) =>
+                    selectedImageNames.includes(
+                      d.relative_path.split("/").pop().replace(".png", "")
+                    ) && d.sub === subject
+                );
+
+                if (subjectImages.length > 0) {
+                  const subjectImagePromises = subjectImages.map(
+                    (imageData) => {
+                      return new Promise((resolveImage) => {
+                        const imagePath = `./${imageData.relative_path}`;
+                        const img = new Image();
+                        img.src = imagePath;
+
+                        img.onload = function () {
+                          const imgWidth = 180; // Adjust the width as needed
+                          const imgHeight = 100; // Adjust the height as needed
+
+                          // Check if the image fits on the current page, otherwise add a new page
+                          if (
+                            yPosition + imgHeight + 40 >
+                            doc.internal.pageSize.height
+                          ) {
+                            doc.addPage();
+                            yPosition = 30; // Reset yPosition for the new page
+                          }
+
+                          // Add the image to the PDF
+                          doc.addImage(
+                            img,
+                            "PNG",
+                            10,
+                            yPosition,
+                            imgWidth,
+                            imgHeight
+                          );
+                          doc.setFontSize(10); // Use smaller font for the file name
+                          const label = `${imageData.file_name}`;
+                          const lines = doc.splitTextToSize(label, imgWidth);
+                          doc.text(lines, 10, yPosition + imgHeight + 5);
+
+                          // Add file info
+                          const fileInfo = JSON.parse(imageData.file_info);
+                          const fileInfoText = [
+                            `Orientation: ${fileInfo.orientation}`,
+                            `Dimensions: ${fileInfo.dimension.join(" x ")}`,
+                            `Resolution: ${fileInfo.resolution
+                              .map((num) => num.toFixed(2))
+                              .join(" x ")}`,
+                          ];
+
+                          if (fileInfo.tr !== null) {
+                            fileInfoText.push(`TR: ${fileInfo.tr.toFixed(2)}`);
+                          }
+
+                          if (fileInfo.nos_tr !== null) {
+                            fileInfoText.push(`No. of TRs: ${fileInfo.nos_tr}`);
+                          }
+
+                          const fileInfoLines = doc.splitTextToSize(
+                            fileInfoText.join("\n"),
+                            imgWidth
+                          );
+                          doc.text(
+                            fileInfoLines,
+                            10,
+                            yPosition + imgHeight + 15
+                          );
+
+                          // Move to the next row after each image
+                          yPosition += imgHeight + 40;
+
+                          resolveImage();
+                        };
+
+                        img.onerror = function () {
+                          console.error("Image not found:", imagePath);
+                          resolveImage();
+                        };
+                      });
+                    }
+                  );
+
+                  Promise.all(subjectImagePromises).then(() => {
+                    resolveSubject();
+                  });
+                } else {
+                  resolveSubject();
+                }
+              });
+            });
+
+            // Wait for all images to be added, then save the PDF
+            Promise.all(imagePromises).then(() => {
+              // Remove the initial page if it is empty
+              if (
+                doc.getNumberOfPages() > 1 &&
+                doc.internal.getCurrentPageInfo().pageNumber === 1 &&
+                yPosition === 30
+              ) {
+                doc.deletePage(1);
+              }
+              doc.save("cpac-qc-report.pdf");
+              notification.innerText = "PDF generation complete!";
+              setTimeout(() => {
+                document.body.removeChild(notification);
+              }, 5000); // Remove notification after 5 seconds
+            });
+          };
+
+          logoImg.onerror = function () {
+            console.error("CPAC logo not found:", logoImg.src);
+            notification.innerText = "Error: CPAC logo not found.";
+            setTimeout(() => {
+              document.body.removeChild(notification);
+            }, 5000); // Remove notification after 5 seconds
+          };
+        }
+      });
+    </script>
+  </body>
+</html>

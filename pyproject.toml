@@ -1,0 +1,35 @@
+[project]
+name = "CPACqc"
+version = "0.1.13"
+description = "A BIDS QC report generator"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Biraj Shrestha", email = "birajstha@gmail.com" }]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/birajstha/bids_qc"
+
+[project.scripts]
+cpacqc = "CPACqc.ui.cli:run"
+
+[tool.pdm]
+distribution = true
+
+[tool.pdm.build]
+includes = ["CPACqc", "README.md"]
+
+[[tool.pdm.packages]]
+include = "CPACqc/overlay/overlay.csv"
+
+[tool.pdm.dev-dependencies]
+test = ["pytest"]
+
+[tool.pytest.ini_options]
+addopts = "-ra -q"
+testpaths = ["CPACqc/tests"]
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
