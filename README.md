@@ -1,10 +1,14 @@
 [![PyPI Downloads](https://static.pepy.tech/badge/cpacqc)](https://pepy.tech/projects/cpacqc)
-
+[![PyPI Downloads](https://static.pepy.tech/badge/cpacqc)](https://pepy.tech/projects/cpacqc)
+[![PyPI Version](https://img.shields.io/pypi/v/cpacqc.svg)](https://pypi.org/project/cpacqc/)
+[![Build Status](https://github.com/birajstha/bids_qc/actions/workflows/workflow.yml/badge.svg)](https://github.com/birajstha/bids_qc/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python Versions](https://img.shields.io/pypi/pyversions/cpacqc.svg)](https://pypi.org/project/cpacqc/)
 # CPAC-QC Plotting App
 
 ### PDF Report
-![PDF report](cpac-qc/static/cpac-qc_pdf.png)
-example PDF report here: [PDF REPORT](cpac-qc/static/sub-A00040524_ses-NFB3_qc_report.pdf)
+![PDF report](CPACqc/static/cpac-qc_pdf.png)
+example PDF report here: [PDF REPORT](CPACqc/static/sub-A00040524_ses-NFB3_qc_report.pdf)
 
 
 ## Overview
@@ -13,7 +17,7 @@ The CPAC-qc Plotting App is a tool designed to generate quality control plots fo
 
 ## Updates
 - Outputs only PDF report now.
-- [Default config](cpac-qc/CPACqc/utils/overlay/overlay.csv) has overlays.
+- [Default config](CPACqc/CPACqc/utils/overlay/overlay.csv) has overlays.
 - Images on PDF report will follow the order mentioned in overlay.csv provided or default.
 - Added Bookmarks on PDF report for easy navigation.
 
