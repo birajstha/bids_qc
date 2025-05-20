@@ -3,7 +3,7 @@ name = "CPACqc"
 version = "0.1.13"
 description = "A BIDS QC report generator"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "Biraj Shrestha", email = "birajstha@gmail.com" }]
 dependencies = []
@@ -29,3 +29,7 @@ test = ["pytest"]
 [tool.pytest.ini_options]
 addopts = "-ra -q"
 testpaths = ["CPACqc/tests"]
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"

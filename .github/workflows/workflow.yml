@@ -1,11 +1,6 @@
 name: Publish to PyPI
 
 on:
-  pull_request_target:
-    branches:
-      - main
-    types:
-      - closed
   push:
     branches:
       - main
@@ -16,25 +11,24 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version: "3.12"
+
+      - name: Install PDM
+        run: python -m pip install pdm
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install setuptools wheel twine
+        run: pdm install
 
       - name: Build package
-        run: |
-          python setup.py sdist bdist_wheel
+        run: pdm build
 
       - name: Publish package
         env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          twine upload dist/*
+          PDM_PUBLISH_USERNAME: __token__
+          PDM_PUBLISH_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: pdm publish
