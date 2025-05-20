@@ -1,6 +1,6 @@
 [project]
 name = "CPACqc"
-version = "0.1.13"
+version = "0.2.13"
 description = "A BIDS QC report generator"
 readme = "README.md"
 requires-python = ">=3.12"
