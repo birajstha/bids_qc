@@ -253,12 +253,14 @@ def create_result_row(res1_row, res2_row, file_name, plots_dir, plot_path):
     }
 
 def fill_space(row):
-    if row["space"] == "":
-        if row["datatype"] == "anat":
+    space = row.get("space", "")
+    datatype = row.get("datatype", "")
+    if space == "":
+        if datatype == "anat":
             return "T1w"
-        elif row["datatype"] == "func":
+        elif datatype == "func":
             return "bold"
-    return row["space"]
+    return space
 
 
 

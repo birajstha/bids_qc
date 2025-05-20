@@ -149,9 +149,14 @@ class QCPipeline:
         """
         Remove temporary QC directory or unnecessary files after processing.
         """
-        qc_dir = self.app_config.qc_dir
-        if os.path.exists(qc_dir):
-            print(Fore.YELLOW + f"Removing the QC output directory: {qc_dir}" + Style.RESET_ALL)
-            shutil.rmtree(qc_dir)
-        else:
-            print(Fore.YELLOW + f"QC output directory does not exist: {qc_dir}" + Style.RESET_ALL)
+        dirs_to_remove = [
+            self.app_config.plots_dir,
+            self.app_config.overlay_dir,
+            self.app_config.csv_dir
+        ]
+        for qc_dir in dirs_to_remove:
+            if os.path.exists(qc_dir):
+                print(Fore.YELLOW + f"Removing the QC output directory: {qc_dir}" + Style.RESET_ALL)
+                shutil.rmtree(qc_dir)
+            else:
+                print(Fore.YELLOW + f"QC output directory does not exist: {qc_dir}" + Style.RESET_ALL)
