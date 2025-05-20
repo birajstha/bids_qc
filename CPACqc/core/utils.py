@@ -69,9 +69,7 @@ def get_file_info(file_path):
         return None
 
 def gen_resource_name(row):
-    sub = row["sub"]
-    ses = row["ses"] if row["ses"] != "" else False
-    sub_ses = f"sub-{sub}_ses-{ses}" if ses else f"sub-{sub}"
+    sub_ses = row["sub_ses"]
 
     # Handle task, run, acq flexibly
     task = row.get("task", "") or ""
@@ -85,15 +83,19 @@ def gen_resource_name(row):
     if acq:
         scan_parts.append(f"acq-{acq}")
     if run:
-        scan_parts.append(f"run-{run}")
+        try:
+            scan_parts.append(f"run-{str(int(float(run)))}")
+        except ValueError:
+            scan_parts.append(f"run-{run}")
 
     scan_pattern = "_".join(scan_parts)
     if scan_pattern:
         scan_pattern += "_"
 
     # Build regex pattern to remove from file_name
-    pattern = re.escape(f"{sub_ses}_") + scan_pattern
-    resource_name = re.sub(pattern, "", row["file_name"])
+    pattern = f"{sub_ses}_" + scan_pattern
+    resource_name = row["file_name"].replace(pattern, "")
+    resource_name = resource_name.replace(f"{sub_ses}_", "")
     return resource_name
 
 def get_rows_by_resource_name(resource_name, datatype, nii_gz_files):
@@ -141,11 +143,12 @@ def get_scan(row):
     # Handle missing or NaN values
     task_str = f"task-{task}" if task and str(task).strip() and str(task).lower() != "nan" else ""
     acq_str = f"acq-{acq}" if acq and str(acq).strip() and str(acq).lower() != "nan" else ""
+
     try:
-        run_val = int(run)
-        run_str = f"run-{run_val}"
-    except (ValueError, TypeError):
-        run_str = ""
+        run_str = f"run-{str(int(float(run)))}" if run and str(run).strip() and str(run).lower() != "nan" else ""
+        
+    except ValueError:
+        run_str = f"run-{run}" if run and str(run).strip() and str(run).lower() != "nan" else ""
 
     # Combine non-empty parts
     parts = [p for p in [task_str, acq_str, run_str] if p]
@@ -157,7 +160,7 @@ def get_sub_ses(row):
     return f"sub-{sub}_ses-{ses}" if ses else f"sub-{sub}"
 
 def gen_filename(res1_row, res2_row=None):
-    scan = f"task-{res1_row['task']}_run-{int(res1_row['run'])}_" if res1_row['task'] and res1_row['run'] else ""
+    scan = res1_row["scan"] + "_"
     if res2_row is not None:
         return f"sub-{res1_row['sub']}_ses-{res1_row['ses']}_{scan + res1_row['resource_name']} overlaid on {res2_row['resource_name']}"
     else:
@@ -206,6 +209,8 @@ def process_res2_rows(res1_row, resource_name_2, seen, overlay_dir, plots_dir):
                 sub_dir = create_directory(res1_row['sub'], res1_row['ses'], overlay_dir)
                 plot_path = generate_plot_path(sub_dir, file_name)
                 result_rows.append(create_result_row(res1_row, res2_row, file_name, overlay_dir, plot_path))
+        elif res1_row['space'] == "" or res2_row['space'] == "":
+            pass
         else:
             message = f"SPACE MISMATCH while trying to plot .. \n{file_name.split('overlaid on')[0]}\nover\n{file_name.split(' overlaid on ')[1]}\n{res1_row['space']} != {res2_row['space']}"
             logger.info(message=message)
@@ -243,7 +248,8 @@ def create_result_row(res1_row, res2_row, file_name, plots_dir, plot_path):
         "datatype": res1_row["datatype"],
         "resource_name": res1_row["resource_name"],
         "space": res1_row["space"],
-        "scan": res1_row["scan"]
+        "scan": res1_row["scan"],
+        "json": res1_row["json"]
     }
 
 def fill_space(row):
@@ -284,7 +290,7 @@ def parse_json_column(val):
         return {}
 
 
-def flatten_json_collapse_lists(d, parent_key='', sep='.'):
+def flatten_json_collapse_lists(d, parent_key='', sep='-'):
     """
     Flatten a nested dict for display, collapsing lists into comma-separated strings.
     """

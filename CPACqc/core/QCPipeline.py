@@ -5,7 +5,7 @@ import json
 import shutil
 
 from CPACqc.core.utils import (
-    process_row, gen_filename, generate_plot_path, create_directory, get_file_info, clean_and_flatten_json_column
+    process_row, gen_filename, generate_plot_path, create_directory, get_file_info
 )
 from CPACqc.utils.multiprocessing.multiprocessing_utils import Multiprocess
 from CPACqc.utils.report.pdf import Report
@@ -39,9 +39,12 @@ class QCPipeline:
         self.overlay_df = pd.read_csv(self.app_config.overlay_csv).fillna(False)
         self.not_plotted = []
 
+        self.cols_to_keep = ['sub', 'ses', 'file_path_1', 'file_path_2', 'file_name', 'plots_dir', 'plot_path', 'datatype', 'resource_name', 'space', 'scan']
+
     def run(self):
         sub_ses_list = self.nii_gz_files["sub_ses"].unique()
         for idx, sub_ses in enumerate(sub_ses_list, 1):
+            print(Fore.YELLOW + f"Processing subject {idx}/{len(sub_ses_list)}: {sub_ses}" + Style.RESET_ALL)
             sub_df = self.nii_gz_files[self.nii_gz_files["sub_ses"] == sub_ses]
             self.process_subject(sub_ses, sub_df)
         self.cleanup_qc_dir()
@@ -52,8 +55,8 @@ class QCPipeline:
         result_df = self.generate_results(sub_df, report)
         result_df = self.add_missing_rows(result_df, sub_df)
         result_df = self.add_additional_columns(result_df)
-        self.save_results(result_df, sub_ses)
         result_df = self.remove_duplicates(result_df)
+        self.save_results(result_df, sub_ses)
         self.run_plotting(result_df)
         self.generate_report(result_df, report)
 
@@ -95,9 +98,6 @@ class QCPipeline:
     def add_additional_columns(self, result_df):
         result_df['relative_path'] = result_df.apply(lambda row: os.path.relpath(row['plot_path'], self.app_config.qc_dir), axis=1)
         result_df['file_info'] = result_df.apply(lambda row: get_file_info(row['file_path_1']), axis=1)
-        if 'json' in result_df.columns:
-            from CPACqc.core.utils import clean_and_flatten_json_column
-            result_df['json'] = result_df['json'].apply(clean_and_flatten_json_column)
         return result_df
 
     def save_results(self, result_df, sub_ses):
@@ -110,12 +110,16 @@ class QCPipeline:
         )
 
     def remove_duplicates(self, result_df):
+        subset_cols = [
+            "file_path_1", "file_path_2", "file_name", "plots_dir", "plot_path",
+            "datatype", "resource_name", "space", "scan"
+        ]
         if 'json' in result_df.columns:
-            result_df['json'] = result_df['json'].apply(lambda x: json.dumps(x, sort_keys=True) if isinstance(x, dict) else str(x))
-        return result_df.drop_duplicates(
-            subset=["file_path_1", "file_path_2", "file_name", "plots_dir", "plot_path", "datatype", "resource_name", "space", "scan", "json"],
-            keep="first"
-        )
+            result_df['json'] = result_df['json'].apply(
+                lambda x: json.dumps(x, sort_keys=True) if isinstance(x, dict) else (x if pd.isna(x) else str(x))
+            )
+            subset_cols.append("json")
+        return result_df.drop_duplicates(subset=subset_cols, keep="first")
 
     def run_plotting(self, result_df):
         my_plots = [

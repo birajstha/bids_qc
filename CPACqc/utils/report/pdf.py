@@ -321,8 +321,9 @@ class Report(ReportGeneratorService):
                 continue
             # Ensure value text is black
             self.styles['Normal'].textColor = colors.black
+            para_key = Paragraph(str(key), self.styles['Normal'])
             para_value = Paragraph(str(value), self.styles['Normal'])
-            json_text.append([f"{key}:", para_value])
+            json_text.append([para_key, para_value])
     
         if len(json_text) == 1:
             print(Fore.YELLOW + f"JSON data is empty for {image_data.get('file_name', '')}. Skipping..." + Style.RESET_ALL)
