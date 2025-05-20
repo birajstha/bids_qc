@@ -6,8 +6,8 @@
 # CPAC-QC Plotting App
 
 ### PDF Report
-![PDF report](static/cpac-qc_pdf.png)
-example PDF report here: [PDF REPORT](static/sub-A00040524_ses-NFB3_qc_report.pdf)
+![PDF report](https://raw.githubusercontent.com/birajstha/bids_qc/main/static/cpac-qc_pdf.png)
+example PDF report here: [PDF REPORT](https://github.com/birajstha/bids_qc/raw/main/static/sub-A00040524_ses-NFB3_qc_report.pdf)
 
 
 ## Overview
@@ -16,7 +16,7 @@ The CPAC-qc Plotting App is a tool designed to generate quality control plots fo
 
 ## Updates
 - Outputs only PDF report now.
-- [Default config](static/overlay.csv) has overlays.
+- [Default config](https://github.com/birajstha/bids_qc/raw/main/static/overlay.csv) has overlays.
 - Images on PDF report will follow the order mentioned in overlay.csv provided or default.
 - Added Bookmarks on PDF report for easy navigation.
 
@@ -84,7 +84,7 @@ desc-preproc_bold,desc-preproc_T1w,func
 ```
 
 and so on.
-If not provided a [default config](static/overlay.csv) will be used.
+If not provided a [default config](https://github.com/birajstha/bids_qc/raw/main/static/overlay.csv) will be used.
 
 ## Viewing
 
