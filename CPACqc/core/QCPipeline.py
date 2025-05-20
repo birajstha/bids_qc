@@ -148,6 +148,7 @@ class QCPipeline:
     def cleanup_qc_dir(self):
         """
         Remove temporary QC directory or unnecessary files after processing.
+        If using a temp QC dir, copy only report PDFs to the current directory before deleting.
         """
         dirs_to_remove = [
             self.app_config.plots_dir,
@@ -160,3 +161,12 @@ class QCPipeline:
                 shutil.rmtree(qc_dir)
             else:
                 print(Fore.YELLOW + f"QC output directory does not exist: {qc_dir}" + Style.RESET_ALL)
+        if '.temp_qc' in self.app_config.qc_dir:
+            # Copy only PDF files from temp QC dir to current working directory
+            for root, _, files in os.walk(self.app_config.qc_dir):
+                for file in files:
+                    if file.endswith('.pdf'):
+                        src = os.path.join(root, file)
+                        dst = os.path.join(os.getcwd(), file)
+                        shutil.copy2(src, dst)
+            shutil.rmtree(self.app_config.qc_dir)
