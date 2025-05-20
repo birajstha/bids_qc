@@ -1,6 +1,6 @@
 [project]
 name = "CPACqc"
-version = "0.2.14"
+version = "0.2.15"
 description = "A BIDS QC report generator"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -19,12 +19,6 @@ distribution = true
 
 [tool.pdm.build]
 includes = ["CPACqc", "README.md", "static"]
-
-[[tool.pdm.packages]]
-include = "CPACqc/overlay/overlay.csv"
-
-[[tool.pdm.packages]]
-include = "static/*"
 
 [tool.pdm.dev-dependencies]
 test = ["pytest"]
