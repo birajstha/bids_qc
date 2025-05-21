@@ -155,12 +155,13 @@ class QCPipeline:
             self.app_config.overlay_dir,
             self.app_config.csv_dir
         ]
+        print(Fore.YELLOW + "Cleaning up ..." + Style.RESET_ALL)
         for qc_dir in dirs_to_remove:
             if os.path.exists(qc_dir):
-                print(Fore.YELLOW + f"Removing the QC output directory: {qc_dir}" + Style.RESET_ALL)
+                self.logger.info(f"Removing directory: {qc_dir}")
                 shutil.rmtree(qc_dir)
             else:
-                print(Fore.YELLOW + f"QC output directory does not exist: {qc_dir}" + Style.RESET_ALL)
+                self.logger.warning(f"Directory {qc_dir} does not exist, skipping removal.")
         if '.temp_qc' in self.app_config.qc_dir:
             # Copy only PDF files from temp QC dir to current working directory
             for root, _, files in os.walk(self.app_config.qc_dir):
