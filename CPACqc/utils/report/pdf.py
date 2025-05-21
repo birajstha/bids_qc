@@ -46,7 +46,6 @@ class Report(ReportGeneratorService):
 
     def __post_init__(self):
         self.width, self.height = self.page_size
-        # Make content width fill the page between margins
         self.CONTENT_WIDTH = self.width - self.margin_left - self.margin_right
         if self.qc_dir and self.sub_ses:
             self.pdf_path = self.get_pdf_path()
@@ -78,7 +77,6 @@ class Report(ReportGeneratorService):
         }
         self.page_log.append(entry)
         logger.info(f"New page: {entry}")
-        # Only add header/footer for image or json_details pages
         if content_type in ("image", "json_details"):
             self.add_header(chapter, scan)
             self.add_footer(self.page_number)
@@ -121,7 +119,7 @@ class Report(ReportGeneratorService):
         self.pdf_canvas.drawCentredString(self.width / 2, self.margin_bottom + 40, f"Created on: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}")
         self.pdf_canvas.drawCentredString(self.width / 2, self.margin_bottom + 20, "CPAC Team")
         self.pdf_canvas.showPage()
-        self.page_number = 1  # Reset so contents is page 1
+        self.page_number = 1
 
     def add_contents_page(self):
         self.pdf_canvas.setFont("Helvetica", 20)
@@ -220,14 +218,8 @@ class Report(ReportGeneratorService):
     def add_scan_title_page(self, chapter, scan):
         self.new_page(reason="scan_title", chapter=chapter, scan=scan, content_type="title")
         self.pdf_canvas.setFont("Helvetica-Bold", 25)
-        if scan.strip() == '':
-            self.pdf_canvas.drawCentredString(self.width / 2, self.height / 2, f"{chapter} - (No scan name)")
-            self.pdf_canvas.bookmarkPage(f"subsection_{chapter}")
-        else:
-            self.pdf_canvas.drawCentredString(self.width / 2, self.height / 2, f"{chapter} - {scan}")
-            self.pdf_canvas.bookmarkPage(f"subsection_{chapter}_{scan}")
+        self.pdf_canvas.drawCentredString(self.width / 2, self.height / 2, f"{chapter} - {scan}")
         self.pdf_canvas.bookmarkPage(f"subsection_{chapter}_{scan}")
-        # Always start a new page after scan title page for images
         self.new_page(reason="scan_images_start", chapter=chapter, scan=scan, content_type="image")
         self.add_header(chapter, scan)
         self.add_footer(self.page_number)
@@ -260,7 +252,7 @@ class Report(ReportGeneratorService):
         image_path = os.path.join(self.qc_dir, image_data['relative_path'])
         if not os.path.exists(image_path):
             return cursor_y
-
+    
         img = ImageReader(image_path)
         max_img_width = self.CONTENT_WIDTH
         max_img_height = self.height - self.margin_top - self.margin_bottom - 200
@@ -272,33 +264,115 @@ class Report(ReportGeneratorService):
         else:
             img_height = min(max_img_height, img_height)
             img_width = img_height * aspect_ratio
-
+    
         image_block_height = img_height + 40
         details_height = self.estimate_image_details_height(image_data)
-        json_height = self.estimate_json_details_height(image_data)
-        total_needed = image_block_height + details_height + json_height + 60
-
+        # Do NOT estimate json_height here
+    
+        total_needed = image_block_height + details_height + 60  # Only image and details
+    
         if cursor_y - total_needed < self.margin_bottom:
             self.new_page(reason="image", chapter=chapter, scan=scan, content_type="image")
             self.add_footer(self.page_number)
             self.add_header(chapter, scan)
             cursor_y = self.height - self.margin_top
-
+    
         self.pdf_canvas.setFont("Helvetica", 15)
         self.pdf_canvas.drawString(self.margin_left, cursor_y - 20, f"{image_data['resource_name']}")
         self.pdf_canvas.bookmarkPage(f"image_{chapter}_{scan}_{image_data['resource_name']}")
         cursor_y -= 40
-
+    
         self.pdf_canvas.drawImage(img, self.margin_left, cursor_y - img_height, width=self.CONTENT_WIDTH, height=img_height)
         cursor_y -= img_height + 20
-
+    
         details_drawn = self.add_image_details(image_data, cursor_y, 0)
         cursor_y -= details_drawn + 20
-
-        json_drawn = self.add_json_details(image_data, cursor_y, chapter, scan)
+    
+        # Always call JSON details at current cursor_y, let it handle page breaks
+        json_drawn = self.add_json_details_with_pagebreak(image_data, cursor_y, chapter, scan)
         cursor_y -= json_drawn + 20
-
+    
         return cursor_y
+
+    def add_json_details_with_pagebreak(self, image_data, y_position, chapter=None, scan=None):
+        flat_json = image_data.get('json', None)
+        if flat_json is None or flat_json == '' or flat_json == {}:
+            print(Fore.YELLOW + f"JSON data is empty for {image_data.get('file_name', '')}. Skipping..." + Style.RESET_ALL)
+            return 0
+        if isinstance(flat_json, str):
+            try:
+                flat_json = json.loads(flat_json)
+            except Exception as e:
+                print(Fore.YELLOW + f"Could not parse JSON for {image_data.get('file_name', '')}: {e}" + Style.RESET_ALL)
+                return 0
+        if not flat_json or flat_json == {}:
+            print(Fore.YELLOW + f"JSON data is empty for {image_data.get('file_name', '')}. Skipping..." + Style.RESET_ALL)
+            return 0
+    
+        json_text = [["Json Field", "Value"]]
+        for key, value in flat_json.items():
+            if not key or (isinstance(value, float) and pd.isna(value)):
+                continue
+            self.styles['Normal'].textColor = colors.black
+            para_key = Paragraph(str(key), self.styles['Normal'])
+            para_value = Paragraph(str(value), self.styles['Normal'])
+            json_text.append([para_key, para_value])
+        if len(json_text) == 1:
+            print(Fore.YELLOW + f"JSON data is empty for {image_data.get('file_name', '')}. Skipping..." + Style.RESET_ALL)
+            return 0
+    
+        col1_width = min(180, self.CONTENT_WIDTH * 0.3)
+        col2_width = self.CONTENT_WIDTH - col1_width
+    
+        table_style = TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.lightgrey),
+            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ])
+    
+        header = [json_text[0]]
+        rows = json_text[1:]
+        total_drawn_height = 0
+        available_height = y_position - self.margin_bottom
+    
+        while rows:
+            # Try to fit as many rows as possible on this page
+            fit = 0
+            for i in range(1, len(rows) + 1):
+                table_data = header + rows[:i]
+                table = Table(table_data, colWidths=[col1_width, col2_width], repeatRows=1)
+                table.setStyle(table_style)
+                w, h = table.wrap(self.CONTENT_WIDTH, available_height)
+                if h > available_height:
+                    break
+                fit = i
+            if fit == 0:
+                # Not even one row fits, start a new page
+                self.new_page(reason="json_details", chapter=chapter, scan=scan, content_type="json_details")
+                self.add_header(chapter, scan)
+                self.add_footer(self.page_number)
+                y_position = self.height - self.margin_top
+                available_height = y_position - self.margin_bottom
+                continue
+            # Draw the table with the rows that fit
+            table_data = header + rows[:fit]
+            table = Table(table_data, colWidths=[col1_width, col2_width], repeatRows=1)
+            table.setStyle(table_style)
+            w, h = table.wrap(self.CONTENT_WIDTH, available_height)
+            table.drawOn(self.pdf_canvas, self.margin_left, y_position - h)
+            y_position -= h
+            total_drawn_height += h
+            rows = rows[fit:]
+            available_height = y_position - self.margin_bottom
+    
+        return total_drawn_height
+
 
     def estimate_image_details_height(self, image_data):
         label = f"{image_data['file_name']}"
@@ -396,52 +470,6 @@ class Report(ReportGeneratorService):
         table.drawOn(self.pdf_canvas, self.margin_left, y_position - table_height)
         return table_height
 
-    def add_json_details(self, image_data, y_position, chapter=None, scan=None):
-        flat_json = image_data.get('json', None)
-        if flat_json is None or flat_json == '' or flat_json == {}:
-            print(Fore.YELLOW + f"JSON data is empty for {image_data.get('file_name', '')}. Skipping..." + Style.RESET_ALL)
-            return 0
-        if isinstance(flat_json, str):
-            try:
-                flat_json = json.loads(flat_json)
-            except Exception as e:
-                print(Fore.YELLOW + f"Could not parse JSON for {image_data.get('file_name', '')}: {e}" + Style.RESET_ALL)
-                return 0
-        if not flat_json or flat_json == {}:
-            print(Fore.YELLOW + f"JSON data is empty for {image_data.get('file_name', '')}. Skipping..." + Style.RESET_ALL)
-            return 0
-        json_text = [["Json Field", "Value"]]
-        for key, value in flat_json.items():
-            if not key or (isinstance(value, float) and pd.isna(value)):
-                continue
-            self.styles['Normal'].textColor = colors.black
-            para_key = Paragraph(str(key), self.styles['Normal'])
-            para_value = Paragraph(str(value), self.styles['Normal'])
-            json_text.append([para_key, para_value])
-        if len(json_text) == 1:
-            print(Fore.YELLOW + f"JSON data is empty for {image_data.get('file_name', '')}. Skipping..." + Style.RESET_ALL)
-            return 0
-
-        col1_width = min(180, self.CONTENT_WIDTH * 0.3)
-        col2_width = self.CONTENT_WIDTH - col1_width
-
-        table = Table(json_text, colWidths=[col1_width, col2_width], repeatRows=1)
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.lightgrey),
-            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ]))
-        table.wrapOn(self.pdf_canvas, self.CONTENT_WIDTH, self.height)
-        table_height = table.wrap(self.CONTENT_WIDTH, self.height)[1]
-        table.drawOn(self.pdf_canvas, self.margin_left, y_position - table_height)
-        return table_height
-
     def add_missing_files_page(self):
         if not self.missing_files:
             print(Fore.YELLOW + "No missing files to report." + Style.RESET_ALL)
@@ -460,13 +488,11 @@ class Report(ReportGeneratorService):
             self.pdf_canvas.setFont("Helvetica", 12)
             self.pdf_canvas.drawString(70, y_position - 20, file)
             y_position -= 13
-        # Always end with a new page for "End of Report"
         self.new_page(reason="end_of_report", content_type="end")
         self.pdf_canvas.setFont("Helvetica", 25)
         self.pdf_canvas.drawCentredString(self.width / 2, self.height / 2, "End of Report")
 
     def add_missing_files(self, missing_files):
-        """Add missing files to the report's missing_files list."""
         if isinstance(missing_files, list):
             self.missing_files.extend(missing_files)
         else:
