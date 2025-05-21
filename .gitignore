@@ -126,3 +126,5 @@ dmypy.json
 
 #temporary files
 .temp_qc
+*.pdf
+logs
